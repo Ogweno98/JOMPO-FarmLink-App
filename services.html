@@ -5,12 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Services - JOMPO FarmLink</title>
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Firebase CDN -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-green-50 font-sans">
@@ -18,9 +15,7 @@
   <!-- Navbar -->
   <nav class="bg-green-800 text-white p-4 flex justify-between items-center">
     <a href="index.html" class="text-2xl font-bold">JOMPO FarmLink</a>
-    <div id="authLinks">
-      <!-- Auth links populated by app.js -->
-    </div>
+    <div id="authLinks"></div>
   </nav>
 
   <!-- Services Section -->
@@ -29,22 +24,12 @@
 
     <!-- Filters -->
     <div class="mb-6 flex flex-col md:flex-row gap-4">
-      <input 
-        type="text" 
-        id="searchService" 
-        placeholder="Search service..." 
-        class="px-4 py-2 border rounded w-full md:w-1/3 focus:outline-none focus:ring-2 focus:ring-green-600"
-      >
-      <input 
-        type="text" 
-        id="filterServiceLocation" 
-        placeholder="Filter by location" 
-        class="px-4 py-2 border rounded w-full md:w-1/3 focus:outline-none focus:ring-2 focus:ring-green-600"
-      >
-      <select 
-        id="filterServiceCategory" 
-        class="px-4 py-2 border rounded w-full md:w-1/3 focus:outline-none focus:ring-2 focus:ring-green-600"
-      >
+      <input type="text" id="searchService" placeholder="Search service..."
+             class="px-4 py-2 border rounded w-full md:w-1/3 focus:outline-none focus:ring-2 focus:ring-green-600">
+      <input type="text" id="filterServiceLocation" placeholder="Filter by location"
+             class="px-4 py-2 border rounded w-full md:w-1/3 focus:outline-none focus:ring-2 focus:ring-green-600">
+      <select id="filterServiceCategory"
+              class="px-4 py-2 border rounded w-full md:w-1/3 focus:outline-none focus:ring-2 focus:ring-green-600">
         <option value="">All Categories</option>
       </select>
     </div>
@@ -54,8 +39,8 @@
     <p id="noServices" class="text-gray-600 mt-6 hidden">No services found.</p>
   </section>
 
-  <!-- App Logic for Services -->
   <script>
+    const auth = firebase.auth();
     const db = firebase.firestore();
 
     async function loadServices() {
@@ -71,7 +56,7 @@
         const snapshot = await db.collection("services").get();
         let services = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // Populate category filter dynamically
+        // Populate category filter
         const categories = [...new Set(services.map(s => s.category).filter(Boolean))];
         categories.forEach(cat => {
           const option = document.createElement("option");
@@ -80,7 +65,6 @@
           categorySelect.appendChild(option);
         });
 
-        // Render services
         function renderServices(filtered = services) {
           container.innerHTML = "";
           if (!filtered.length) {
@@ -99,8 +83,67 @@
               <p class="text-gray-700">Category: ${service.category || "N/A"}</p>
               <p class="text-gray-700">Location: ${service.location || "Unknown"}</p>
               <p class="text-gray-900 font-semibold mt-2">Price: KES ${service.price || "0"}</p>
+              <p class="text-sm mt-2">${service.description || ''}</p>
+              <button class="bookServiceBtn mt-4 px-4 py-2 bg-green-700 text-white rounded hover:bg-green-800"
+                      data-id="${service.id}" data-price="${service.price}" data-name="${service.name}">
+                Book Now
+              </button>
             `;
             container.appendChild(card);
+          });
+
+          // Attach booking listeners
+          document.querySelectorAll(".bookServiceBtn").forEach(btn => {
+            btn.addEventListener("click", async () => {
+              const serviceId = btn.dataset.id;
+              const servicePrice = btn.dataset.price;
+              const serviceName = btn.dataset.name;
+              const user = auth.currentUser;
+
+              if (!user) {
+                alert("Please login to book a service.");
+                return;
+              }
+
+              const phoneNumber = prompt("Enter your phone number (format 2547XXXXXXXX):");
+              if (!phoneNumber) return;
+
+              // Save booking as pending
+              const bookingRef = await db.collection("bookings").add({
+                serviceId,
+                userId: user.uid,
+                serviceName,
+                price: servicePrice,
+                status: "pending",
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+              });
+
+              try {
+                // Trigger STK Push via your backend
+                const res = await fetch("https://your-server.com/mpesa", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    phoneNumber,
+                    amount: servicePrice,
+                    accountReference: serviceName,
+                    transactionDesc: `Payment for ${serviceName}`
+                  })
+                });
+
+                const data = await res.json();
+
+                if (data.ResponseCode === "0") {
+                  await bookingRef.update({ checkoutRequestID: data.CheckoutRequestID });
+                  alert("STK Push sent! Complete the payment on your phone.");
+                } else {
+                  alert("Error initiating payment: " + data.ResponseDescription);
+                }
+
+              } catch (err) {
+                alert("Payment request failed: " + err.message);
+              }
+            });
           });
         }
 
@@ -134,4 +177,5 @@
   </script>
 </body>
 </html>
+
         
