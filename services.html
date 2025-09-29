@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Services - JOMPO FarmLink</title>
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Firebase CDN (needed for app.js) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-green-50 font-sans">
@@ -40,7 +46,7 @@
     <div id="servicesContainer" class="grid md:grid-cols-3 gap-6"></div>
   </section>
 
-  <!-- Your app logic -->
+  <!-- App logic -->
   <script src="app.js"></script>
 </body>
 </html>
