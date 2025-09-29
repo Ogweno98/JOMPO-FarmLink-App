@@ -5,96 +5,94 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard - JOMPO FarmLink</title>
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Firebase CDN (Compat version for app.js) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-green-50 font-sans">
+
   <!-- Navbar -->
   <nav class="bg-green-800 text-white p-4 flex justify-between items-center">
     <a href="index.html" class="text-2xl font-bold">JOMPO FarmLink</a>
     <button id="logoutBtn" class="px-4 py-2 hover:bg-green-700 rounded">Logout</button>
   </nav>
 
-  <!-- Add Listing -->
+  <!-- Add Listing Section -->
   <section class="py-10 px-6 md:px-20">
     <h2 class="text-3xl font-bold text-green-800 mb-6">Add Product / Service</h2>
     <form id="addListingForm" class="bg-white p-6 rounded-lg shadow-md space-y-4">
       <input type="text" id="productName" placeholder="Product / Service Name" required
              class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
-
       <select id="category" class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
         <option value="product">Product</option>
         <option value="service">Service</option>
       </select>
-
       <input type="number" id="quantity" placeholder="Quantity (leave empty if service)"
              class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
-
       <input type="number" id="price" placeholder="Price (KSh)" required
              class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
-
       <input type="text" id="locationListing" placeholder="Location" required
              class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
-
       <button type="submit" class="py-2 px-6 bg-green-700 text-white rounded hover:bg-green-800">
         Add Listing
       </button>
     </form>
 
-    <!-- Listings -->
+    <!-- Your Listings -->
     <h2 class="text-3xl font-bold text-green-800 mt-12 mb-6">Your Listings</h2>
     <div id="listingsContainer" class="grid md:grid-cols-3 gap-6"></div>
+
+    <!-- Service Bookings -->
+    <h2 class="text-3xl font-bold text-green-800 mt-12 mb-6">Service Bookings</h2>
+    <div id="bookingsContainer" class="grid md:grid-cols-1 gap-6"></div>
+    <p id="noBookings" class="text-gray-600 mt-6 hidden">No bookings found.</p>
   </section>
 
-  <!-- App logic -->
   <script src="app.js"></script>
 
-  <!-- Adjustment Script -->
   <script>
-    // Wait for DOM
-    document.addEventListener("DOMContentLoaded", () => {
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    document.addEventListener("DOMContentLoaded", async () => {
       const form = document.getElementById("addListingForm");
       const listingsContainer = document.getElementById("listingsContainer");
+      const bookingsContainer = document.getElementById("bookingsContainer");
+      const noBookings = document.getElementById("noBookings");
 
+      // Logout
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        auth.signOut().then(() => window.location.href = "index.html");
+      });
+
+      // Add Listing / Service
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
-
         const name = document.getElementById("productName").value;
         const category = document.getElementById("category").value;
         const quantity = document.getElementById("quantity").value || null;
         const price = document.getElementById("price").value;
         const location = document.getElementById("locationListing").value;
+        const user = auth.currentUser;
 
-        const listingData = {
-          name,
-          category,
-          quantity,
-          price,
-          location,
-          createdAt: new Date()
-        };
+        if (!user) { alert("Please login"); return; }
+
+        const listingData = { name, category, quantity, price, location, farmerID: user.uid, createdAt: new Date() };
 
         try {
-          if (category === "product") {
-            await db.collection("listings").add(listingData);
-          } else {
-            await db.collection("services").add(listingData);
-          }
+          if (category === "product") await db.collection("listings").add(listingData);
+          else await db.collection("services").add(listingData);
 
           form.reset();
           alert("Listing added successfully!");
-        } catch (error) {
-          console.error("Error adding listing:", error);
-          alert("Failed to add listing. Try again.");
+        } catch (err) {
+          console.error("Error adding listing:", err);
+          alert("Failed to add listing.");
         }
       });
 
-      // Fetch both products & services for display
+      // Render Listings
       function renderListing(doc) {
         const item = doc.data();
         const div = document.createElement("div");
@@ -113,13 +111,45 @@
         listingsContainer.innerHTML = "";
         snapshot.forEach(doc => renderListing(doc));
       });
-
       db.collection("services").onSnapshot(snapshot => {
         snapshot.forEach(doc => renderListing(doc));
       });
+
+      // Render Bookings
+      function renderBooking(doc) {
+        const b = doc.data();
+        const div = document.createElement("div");
+        div.className = "bg-white shadow-md rounded-lg p-4";
+        div.innerHTML = `
+          <h3 class="font-bold text-lg text-green-800">${b.serviceName}</h3>
+          <p><strong>Booked By:</strong> ${b.userId}</p>
+          <p><strong>Price:</strong> KSh ${b.price}</p>
+          <p><strong>Status:</strong> <span class="capitalize">${b.status}</span></p>
+          <p><small>${b.createdAt?.toDate?.() || ""}</small></p>
+        `;
+        bookingsContainer.appendChild(div);
+      }
+
+      auth.onAuthStateChanged(user => {
+        if (user) {
+          // Show bookings for this user
+          db.collection("bookings")
+            .where("userId", "==", user.uid)
+            .onSnapshot(snapshot => {
+              bookingsContainer.innerHTML = "";
+              if (snapshot.empty) noBookings.classList.remove("hidden");
+              else noBookings.classList.add("hidden");
+              snapshot.forEach(doc => renderBooking(doc));
+            });
+        } else {
+          window.location.href = "login.html";
+        }
+      });
     });
   </script>
+
 </body>
 </html>
+
 
 
