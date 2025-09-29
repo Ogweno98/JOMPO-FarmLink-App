@@ -1,4 +1,4 @@
- // ================== FIREBASE SETUP ==================
+// ================== FIREBASE SETUP ==================
 const firebaseConfig = {
   apiKey: "AIzaSyCK2sZb2_O0K8tq0KWKwmSV8z4He30dcDc",
   authDomain: "jompo-farmlink-web.firebaseapp.com",
@@ -122,10 +122,17 @@ if (addListingForm) {
     const user = auth.currentUser;
     if (!user) { alert('Not logged in'); return; }
 
-    await db.collection('listings').add({
+    const listingData = {
       name, category, quantity, price, location,
-      farmerID: user.uid, createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+      farmerID: user.uid,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    if (category === "service") {
+      await db.collection('services').add(listingData);
+    } else {
+      await db.collection('listings').add(listingData);
+    }
 
     alert('Listing added!');
     addListingForm.reset();
@@ -137,17 +144,33 @@ const listingsContainer = document.getElementById('listingsContainer');
 if (listingsContainer) {
   auth.onAuthStateChanged(async user => {
     if (user) {
-      const snapshot = await db.collection('listings')
-        .where('farmerID', '==', user.uid).get();
-
       listingsContainer.innerHTML = '';
-      snapshot.forEach(doc => {
+
+      // Show user's products
+      const productsSnapshot = await db.collection('listings')
+        .where('farmerID', '==', user.uid).get();
+      productsSnapshot.forEach(doc => {
         const data = doc.data();
         listingsContainer.innerHTML += `
           <div class="bg-white p-4 rounded shadow">
             <h3 class="font-bold text-green-800">${data.name}</h3>
             <p>Category: ${data.category}</p>
-            <p>Quantity: ${data.quantity}</p>
+            <p>Quantity: ${data.quantity || '-'}</p>
+            <p>Price: KSh ${data.price}</p>
+            <p>Location: ${data.location}</p>
+          </div>
+        `;
+      });
+
+      // Show user's services
+      const servicesSnapshot = await db.collection('services')
+        .where('farmerID', '==', user.uid).get();
+      servicesSnapshot.forEach(doc => {
+        const data = doc.data();
+        listingsContainer.innerHTML += `
+          <div class="bg-white p-4 rounded shadow">
+            <h3 class="font-bold text-green-800">${data.name}</h3>
+            <p>Category: ${data.category}</p>
             <p>Price: KSh ${data.price}</p>
             <p>Location: ${data.location}</p>
           </div>
