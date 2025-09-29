@@ -5,34 +5,108 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Register - JOMPO FarmLink</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Firebase CDN -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-green-50 font-sans">
+  <!-- Navbar -->
   <nav class="bg-green-800 text-white p-4 flex justify-between items-center">
     <a href="index.html" class="text-2xl font-bold">JOMPO FarmLink</a>
     <a href="login.html" class="px-4 py-2 hover:bg-green-700 rounded">Login</a>
   </nav>
 
+  <!-- Registration Form -->
   <section class="flex justify-center items-center py-20">
     <div class="bg-white p-10 rounded-lg shadow-md w-full max-w-md">
       <h2 class="text-3xl font-bold text-green-800 mb-6 text-center">Register</h2>
       <form id="registerForm" class="space-y-4">
-        <input type="text" id="name" placeholder="Full Name" class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
-        <input type="email" id="email" placeholder="Email" class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
-        <input type="password" id="password" placeholder="Password" class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
-        <input type="text" id="location" placeholder="Your Location (City/Town)" class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
-        <select id="role" class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
+        <input type="text" id="name" placeholder="Full Name" required
+          class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
+        <input type="email" id="email" placeholder="Email" required
+          class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
+        <input type="password" id="password" placeholder="Password" required
+          class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
+        <input type="text" id="location" placeholder="Your Location (City/Town)" required
+          class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
+        <select id="role" required
+          class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
           <option value="farmer">Farmer</option>
           <option value="buyer">Buyer</option>
         </select>
-        <button type="submit" class="w-full py-2 bg-green-700 text-white rounded hover:bg-green-800">Register</button>
+        <button type="submit"
+          class="w-full py-2 bg-green-700 text-white rounded hover:bg-green-800">Register</button>
       </form>
+      <p id="message" class="mt-4 text-center text-sm"></p>
     </div>
   </section>
 
-  <script src="app.js"></script>
+  <script>
+    // ✅ Firebase Config (replace with your real Firebase keys)
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    const registerForm = document.getElementById("registerForm");
+    const message = document.getElementById("message");
+
+    // ✅ Register Function
+    registerForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      message.textContent = "";
+
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const location = document.getElementById("location").value.trim();
+      const role = document.getElementById("role").value;
+
+      try {
+        // Create User
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+
+        // Save extra details to Firestore
+        await db.collection("users").doc(user.uid).set({
+          name,
+          email,
+          location,
+          role,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Send email verification
+        await user.sendEmailVerification();
+
+        message.classList.remove("text-red-600");
+        message.classList.add("text-green-600");
+        message.textContent = "✅ Registration successful! Please verify your email. Redirecting to login...";
+
+        registerForm.reset();
+
+        // Redirect to login page after 4 seconds
+        setTimeout(() => {
+          window.location.href = "login.html";
+        }, 4000);
+
+      } catch (error) {
+        message.classList.remove("text-green-600");
+        message.classList.add("text-red-600");
+        message.textContent = error.message;
+      }
+    });
+  </script>
 </body>
 </html>
+
