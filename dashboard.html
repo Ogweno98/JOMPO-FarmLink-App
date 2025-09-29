@@ -53,6 +53,73 @@
 
   <!-- App logic -->
   <script src="app.js"></script>
+
+  <!-- Adjustment Script -->
+  <script>
+    // Wait for DOM
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById("addListingForm");
+      const listingsContainer = document.getElementById("listingsContainer");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const name = document.getElementById("productName").value;
+        const category = document.getElementById("category").value;
+        const quantity = document.getElementById("quantity").value || null;
+        const price = document.getElementById("price").value;
+        const location = document.getElementById("locationListing").value;
+
+        const listingData = {
+          name,
+          category,
+          quantity,
+          price,
+          location,
+          createdAt: new Date()
+        };
+
+        try {
+          if (category === "product") {
+            await db.collection("listings").add(listingData);
+          } else {
+            await db.collection("services").add(listingData);
+          }
+
+          form.reset();
+          alert("Listing added successfully!");
+        } catch (error) {
+          console.error("Error adding listing:", error);
+          alert("Failed to add listing. Try again.");
+        }
+      });
+
+      // Fetch both products & services for display
+      function renderListing(doc) {
+        const item = doc.data();
+        const div = document.createElement("div");
+        div.className = "bg-white shadow-md rounded-lg p-4";
+        div.innerHTML = `
+          <h3 class="font-bold text-lg text-green-800">${item.name}</h3>
+          <p><strong>Category:</strong> ${item.category}</p>
+          ${item.quantity ? `<p><strong>Quantity:</strong> ${item.quantity}</p>` : ""}
+          <p><strong>Price:</strong> KSh ${item.price}</p>
+          <p><strong>Location:</strong> ${item.location}</p>
+        `;
+        listingsContainer.appendChild(div);
+      }
+
+      db.collection("listings").onSnapshot(snapshot => {
+        listingsContainer.innerHTML = "";
+        snapshot.forEach(doc => renderListing(doc));
+      });
+
+      db.collection("services").onSnapshot(snapshot => {
+        snapshot.forEach(doc => renderListing(doc));
+      });
+    });
+  </script>
 </body>
 </html>
+
 
