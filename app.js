@@ -8,291 +8,201 @@ const firebaseConfig = {
   appId: "1:497296091103:web:72b3e8223ea0cbb306066a"
 };
 
-// Initialize Firebase (compat SDK)
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// ================== REGISTER ==================
-const registerForm = document.getElementById('registerForm');
-if (registerForm) {
-  registerForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('name').value;
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const location = document.getElementById('location').value;
-    const role = document.getElementById('role').value;
-
-    try {
-      const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-      const user = userCredential.user;
-
-      // Save user info
-      await db.collection('users').doc(user.uid).set({
-        name, email, location, role, verified: false
-      });
-
-      // Send email verification
-      await user.sendEmailVerification();
-      alert('Registration successful! Please check your email to verify your account.');
-      registerForm.reset();
-    } catch (err) {
-      alert(err.message);
-    }
+// ================== UTILITY ==================
+function renderItems(container, items, isService=false) {
+  container.innerHTML = '';
+  if (!items.length) return false;
+  items.forEach(item => {
+    container.innerHTML += `
+      <div class="bg-white p-4 rounded shadow hover:shadow-lg transition">
+        <h3 class="font-bold text-green-800">${item.name}</h3>
+        <p>Category: ${item.category}</p>
+        ${item.quantity ? `<p>Quantity: ${item.quantity}</p>` : ''}
+        <p>Price: KSh ${item.price}</p>
+        <p>Location: ${item.location}</p>
+        ${isService && item.description ? `<p class="text-sm mt-2">${item.description}</p>` : ''}
+        ${isService ? `<button class="mt-4 px-4 py-2 bg-green-700 text-white rounded hover:bg-green-800">Book Now</button>` : ''}
+      </div>
+    `;
   });
+  return true;
 }
 
-// ================== LOGIN ==================
-const loginForm = document.getElementById('loginForm');
-if (loginForm) {
-  const loginError = document.getElementById("loginError");
-  const forgotPasswordLink = document.getElementById("forgotPasswordLink");
+function applyFilters(items, filters) {
+  return items.filter(item => 
+    item.name.toLowerCase().includes(filters.search) &&
+    item.location.toLowerCase().includes(filters.location) &&
+    (filters.category ? item.category === filters.category : true)
+  );
+}
 
-  loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
+// ================== AUTH ==================
+function setupAuth() {
+  const registerForm = document.getElementById('registerForm');
+  const loginForm = document.getElementById('loginForm');
+  const logoutBtn = document.getElementById('logoutBtn');
 
-    try {
-      const userCredential = await auth.signInWithEmailAndPassword(email, password);
-      if (!userCredential.user.emailVerified) {
-        if (loginError) {
-          loginError.textContent = "Please verify your email before logging in.";
-          loginError.classList.remove("hidden");
-        } else {
-          alert("Please verify your email before logging in.");
-        }
-        await auth.signOut();
-        return;
-      }
-      window.location.href = "dashboard.html";
-    } catch (err) {
-      if (loginError) {
-        loginError.textContent = err.message;
-        loginError.classList.remove("hidden");
-      } else {
-        alert(err.message);
-      }
-    }
-  });
-
-  // Forgot password link
-  if (forgotPasswordLink) {
-    forgotPasswordLink.addEventListener("click", async (e) => {
+  if (registerForm) {
+    registerForm.addEventListener('submit', async e => {
       e.preventDefault();
-      const email = document.getElementById("loginEmail").value.trim();
-      if (!email) {
-        loginError.textContent = "Enter your email above first, then click Forgot Password.";
-        loginError.classList.remove("hidden");
-        return;
-      }
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const location = document.getElementById('location').value;
+      const role = document.getElementById('role').value;
       try {
-        await auth.sendPasswordResetEmail(email);
-        loginError.textContent = "Password reset email sent! Check your inbox.";
-        loginError.classList.remove("hidden");
-        loginError.classList.add("text-green-600");
-      } catch (error) {
-        loginError.textContent = error.message;
-        loginError.classList.remove("hidden");
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+        await db.collection('users').doc(user.uid).set({ name, email, location, role, verified:false });
+        await user.sendEmailVerification();
+        alert('Registration successful! Verify your email.');
+        registerForm.reset();
+      } catch (err) { alert(err.message); }
+    });
+  }
+
+  if (loginForm) {
+    const loginError = document.getElementById("loginError");
+    loginForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      try {
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        if (!userCredential.user.emailVerified) {
+          if (loginError) { loginError.textContent = "Verify email first."; loginError.classList.remove("hidden"); }
+          await auth.signOut();
+          return;
+        }
+        window.location.href = "dashboard.html";
+      } catch (err) {
+        if (loginError) { loginError.textContent = err.message; loginError.classList.remove("hidden"); }
+        else alert(err.message);
       }
     });
   }
+
+  if (logoutBtn) logoutBtn.addEventListener('click', () => auth.signOut().then(()=> window.location.href='index.html'));
 }
 
-// ================== LOGOUT ==================
-const logoutBtn = document.getElementById('logoutBtn');
-if (logoutBtn) {
-  logoutBtn.addEventListener('click', () => {
-    auth.signOut().then(() => window.location.href = 'index.html');
-  });
-}
+// ================== DASHBOARD ==================
+function setupDashboard() {
+  const listingsContainer = document.getElementById('listingsContainer');
+  const addListingForm = document.getElementById('addListingForm');
+  if (!listingsContainer && !addListingForm) return;
 
-// ================== ADD LISTING ==================
-const addListingForm = document.getElementById('addListingForm');
-if (addListingForm) {
-  addListingForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('productName').value;
-    const category = document.getElementById('category').value;
-    const quantity = document.getElementById('quantity').value;
-    const price = document.getElementById('price').value;
-    const location = document.getElementById('locationListing').value;
+  auth.onAuthStateChanged(async user => {
+    if (!user) return window.location.href = 'login.html';
 
-    const user = auth.currentUser;
-    if (!user) { alert('Not logged in'); return; }
-
-    const listingData = {
-      name, category, quantity, price, location,
-      farmerID: user.uid,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    const fetchUserItems = async () => {
+      const listingsSnap = await db.collection('listings').where('farmerID','==',user.uid).get();
+      const servicesSnap = await db.collection('services').where('farmerID','==',user.uid).get();
+      const allItems = [...listingsSnap.docs.map(d=>({...d.data()})), ...servicesSnap.docs.map(d=>({...d.data()}))];
+      renderItems(listingsContainer, allItems);
     };
 
-    if (category === "service") {
-      await db.collection('services').add(listingData);
-    } else {
-      await db.collection('listings').add(listingData);
-    }
+    fetchUserItems();
 
-    alert('Listing added!');
-    addListingForm.reset();
-  });
-}
-
-// ================== DASHBOARD LISTINGS ==================
-const listingsContainer = document.getElementById('listingsContainer');
-if (listingsContainer) {
-  auth.onAuthStateChanged(async user => {
-    if (user) {
-      listingsContainer.innerHTML = '';
-
-      // Show user's products
-      const productsSnapshot = await db.collection('listings')
-        .where('farmerID', '==', user.uid).get();
-      productsSnapshot.forEach(doc => {
-        const data = doc.data();
-        listingsContainer.innerHTML += `
-          <div class="bg-white p-4 rounded shadow">
-            <h3 class="font-bold text-green-800">${data.name}</h3>
-            <p>Category: ${data.category}</p>
-            <p>Quantity: ${data.quantity || '-'}</p>
-            <p>Price: KSh ${data.price}</p>
-            <p>Location: ${data.location}</p>
-          </div>
-        `;
+    if (addListingForm) {
+      addListingForm.addEventListener('submit', async e => {
+        e.preventDefault();
+        const name = document.getElementById('productName').value;
+        const category = document.getElementById('category').value;
+        const quantity = document.getElementById('quantity').value;
+        const price = document.getElementById('price').value;
+        const location = document.getElementById('locationListing').value;
+        const data = { name, category, quantity, price, location, farmerID:user.uid, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+        if (category==='service') await db.collection('services').add(data);
+        else await db.collection('listings').add(data);
+        addListingForm.reset();
+        fetchUserItems();
       });
-
-      // Show user's services
-      const servicesSnapshot = await db.collection('services')
-        .where('farmerID', '==', user.uid).get();
-      servicesSnapshot.forEach(doc => {
-        const data = doc.data();
-        listingsContainer.innerHTML += `
-          <div class="bg-white p-4 rounded shadow">
-            <h3 class="font-bold text-green-800">${data.name}</h3>
-            <p>Category: ${data.category}</p>
-            <p>Price: KSh ${data.price}</p>
-            <p>Location: ${data.location}</p>
-          </div>
-        `;
-      });
-    } else {
-      window.location.href = 'login.html';
     }
   });
 }
 
 // ================== MARKETPLACE ==================
-const marketplaceContainer = document.getElementById('marketplaceContainer');
-if (marketplaceContainer) {
-  const renderListings = (listings) => {
-    marketplaceContainer.innerHTML = '';
-    listings.forEach(doc => {
-      const data = doc.data();
-      marketplaceContainer.innerHTML += `
-        <div class="bg-white p-4 rounded shadow hover:shadow-lg transition">
-          <h3 class="font-bold text-green-800">${data.name}</h3>
-          <p>Category: ${data.category}</p>
-          ${data.quantity ? `<p>Quantity: ${data.quantity}</p>` : ''}
-          <p>Price: KSh ${data.price}</p>
-          <p>Location: ${data.location}</p>
-        </div>
-      `;
-    });
-  };
-
-  const fetchListings = async () => {
-    const snapshot = await db.collection('listings').get();
-    renderListings(snapshot.docs);
-  };
-
-  fetchListings();
-
-  // Filters
+function setupMarketplace() {
+  const container = document.getElementById('marketplaceContainer');
+  if (!container) return;
+  const noResults = document.getElementById('noResults');
   const searchInput = document.getElementById('searchInput');
   const filterLocation = document.getElementById('filterLocation');
   const filterCategory = document.getElementById('filterCategory');
 
-  [searchInput, filterLocation, filterCategory].forEach(el => {
-    if (el) {
-      el.addEventListener('input', async () => {
-        const snapshot = await db.collection('listings').get();
-        let filtered = snapshot.docs;
+  let allItems = [];
 
-        if (searchInput.value) {
-          filtered = filtered.filter(d =>
-            d.data().name.toLowerCase().includes(searchInput.value.toLowerCase())
-          );
-        }
-        if (filterLocation.value) {
-          filtered = filtered.filter(d =>
-            d.data().location.toLowerCase().includes(filterLocation.value.toLowerCase())
-          );
-        }
-        if (filterCategory.value) {
-          filtered = filtered.filter(d =>
-            d.data().category === filterCategory.value
-          );
-        }
+  const fetchAll = async () => {
+    const listingsSnap = await db.collection('listings').get();
+    const servicesSnap = await db.collection('services').get();
+    allItems = [...listingsSnap.docs.map(d=>({...d.data()})), ...servicesSnap.docs.map(d=>({...d.data()}))];
 
-        renderListings(filtered);
-      });
+    // populate category dropdown
+    if (filterCategory) {
+      const cats = [...new Set(allItems.map(i=>i.category).filter(Boolean))];
+      filterCategory.innerHTML = '<option value="">All Categories</option>';
+      cats.forEach(cat => { const opt = document.createElement('option'); opt.value = cat; opt.textContent=cat; filterCategory.appendChild(opt); });
     }
+
+    if (!renderItems(container, allItems)) noResults.classList.remove('hidden');
+    else noResults.classList.add('hidden');
+  };
+
+  const filterItems = () => {
+    const filters = {
+      search: searchInput?.value.toLowerCase()||'',
+      location: filterLocation?.value.toLowerCase()||'',
+      category: filterCategory?.value||''
+    };
+    const filtered = applyFilters(allItems, filters);
+    if (!renderItems(container, filtered)) noResults.classList.remove('hidden');
+    else noResults.classList.add('hidden');
+  };
+
+  [searchInput, filterLocation, filterCategory].forEach(el=>{
+    if(el) el.addEventListener('input', filterItems);
+    if(el===filterCategory) el.addEventListener('change', filterItems);
   });
+
+  fetchAll();
 }
 
-// ================== SERVICES ==================
-const servicesContainer = document.getElementById('servicesContainer');
-if (servicesContainer) {
-  const renderServices = (services) => {
-    servicesContainer.innerHTML = '';
-    services.forEach(doc => {
-      const data = doc.data();
-      servicesContainer.innerHTML += `
-        <div class="bg-white p-4 rounded shadow hover:shadow-lg transition">
-          <h3 class="font-bold text-green-800">${data.name}</h3>
-          <p>Category: ${data.category}</p>
-          <p>Price: KSh ${data.price}</p>
-          <p>Location: ${data.location}</p>
-          <p class="text-sm mt-2">${data.description || ''}</p>
-          <button class="mt-4 px-4 py-2 bg-green-700 text-white rounded hover:bg-green-800">Book Now</button>
-        </div>
-      `;
-    });
-  };
+// ================== SERVICES PAGE ==================
+function setupServicesPage() {
+  const container = document.getElementById('servicesContainer');
+  if (!container) return;
+  const searchService = document.getElementById('searchService');
+  const filterLocation = document.getElementById('filterServiceLocation');
+
+  let servicesItems = [];
 
   const fetchServices = async () => {
-    const snapshot = await db.collection('services').get();
-    renderServices(snapshot.docs);
+    const snap = await db.collection('services').get();
+    servicesItems = snap.docs.map(d=>({...d.data()}));
+    renderItems(container, servicesItems, true);
   };
 
+  const updateServices = () => {
+    const filters = { search: searchService?.value.toLowerCase()||'', location: filterLocation?.value.toLowerCase()||'', category:'' };
+    renderItems(container, applyFilters(servicesItems, filters), true);
+  };
+
+  [searchService, filterLocation].forEach(el => { if(el) el.addEventListener('input', updateServices); });
+
   fetchServices();
-
-  // Filters
-  const searchService = document.getElementById('searchService');
-  const filterServiceLocation = document.getElementById('filterServiceLocation');
-
-  [searchService, filterServiceLocation].forEach(el => {
-    if (el) {
-      el.addEventListener('input', async () => {
-        const snapshot = await db.collection('services').get();
-        let filtered = snapshot.docs;
-
-        if (searchService.value) {
-          filtered = filtered.filter(d =>
-            d.data().name.toLowerCase().includes(searchService.value.toLowerCase())
-          );
-        }
-        if (filterServiceLocation.value) {
-          filtered = filtered.filter(d =>
-            d.data().location.toLowerCase().includes(filterServiceLocation.value.toLowerCase())
-          );
-        }
-
-        renderServices(filtered);
-      });
-    }
-  });
 }
+
+// ================== INIT ==================
+document.addEventListener('DOMContentLoaded', () => {
+  setupAuth();
+  setupDashboard();
+  setupMarketplace();
+  setupServicesPage();
+});
+
 
 
