@@ -22,6 +22,118 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+// Marketplace Listings
+const marketplaceContainer = document.getElementById('marketplaceContainer');
+if (marketplaceContainer) {
+  const renderListings = (listings) => {
+    marketplaceContainer.innerHTML = '';
+    listings.forEach(doc => {
+      const data = doc.data();
+      marketplaceContainer.innerHTML += `
+        <div class="bg-white p-4 rounded shadow hover:shadow-lg transition">
+          <h3 class="font-bold text-green-800">${data.name}</h3>
+          <p>Category: ${data.category}</p>
+          ${data.quantity ? `<p>Quantity: ${data.quantity}</p>` : ''}
+          <p>Price: KSh ${data.price}</p>
+          <p>Location: ${data.location}</p>
+        </div>
+      `;
+    });
+  };
+
+  // Fetch all listings from Firestore
+  db.collection('listings').get().then(snapshot => {
+    renderListings(snapshot.docs);
+  });
+
+  // Filters (optional)
+  const searchInput = document.getElementById('searchInput');
+  const filterLocation = document.getElementById('filterLocation');
+  const filterCategory = document.getElementById('filterCategory');
+
+  [searchInput, filterLocation, filterCategory].forEach(el => {
+    if (el) {
+      el.addEventListener('input', async () => {
+        const snapshot = await db.collection('listings').get();
+        let filtered = snapshot.docs;
+
+        if (searchInput.value) {
+          filtered = filtered.filter(d =>
+            d.data().name.toLowerCase().includes(searchInput.value.toLowerCase())
+          );
+        }
+        if (filterLocation.value) {
+          filtered = filtered.filter(d =>
+            d.data().location.toLowerCase().includes(filterLocation.value.toLowerCase())
+          );
+        }
+        if (filterCategory.value) {
+          filtered = filtered.filter(d =>
+            d.data().category === filterCategory.value
+          );
+        }
+
+        renderListings(filtered);
+      });
+    }
+  });
+}
+
+// Services Listings
+const servicesContainer = document.getElementById('servicesContainer');
+if (servicesContainer) {
+  const renderServices = (services) => {
+    servicesContainer.innerHTML = '';
+    services.forEach(doc => {
+      const data = doc.data();
+      servicesContainer.innerHTML += `
+        <div class="bg-white p-4 rounded shadow hover:shadow-lg transition">
+          <h3 class="font-bold text-green-800">${data.name}</h3>
+          <p>Category: ${data.category}</p>
+          <p>Price: KSh ${data.price}</p>
+          <p>Location: ${data.location}</p>
+          <p class="text-sm mt-2">${data.description || ''}</p>
+          <button class="mt-4 px-4 py-2 bg-green-700 text-white rounded hover:bg-green-800">
+            Book Now
+          </button>
+        </div>
+      `;
+    });
+  };
+
+  // Fetch all services from Firestore
+  db.collection('services').get().then(snapshot => {
+    renderServices(snapshot.docs);
+  });
+
+  // Filters (optional)
+  const searchService = document.getElementById('searchService');
+  const filterServiceLocation = document.getElementById('filterServiceLocation');
+
+  [searchService, filterServiceLocation].forEach(el => {
+    if (el) {
+      el.addEventListener('input', async () => {
+        const snapshot = await db.collection('services').get();
+        let filtered = snapshot.docs;
+
+        if (searchService.value) {
+          filtered = filtered.filter(d =>
+            d.data().name.toLowerCase().includes(searchService.value.toLowerCase())
+          );
+        }
+        if (filterServiceLocation.value) {
+          filtered = filtered.filter(d =>
+            d.data().location.toLowerCase().includes(filterServiceLocation.value.toLowerCase())
+          );
+        }
+
+        renderServices(filtered);
+      });
+    }
+  });
+}
+
+
 // REGISTER
 const registerForm = document.getElementById('registerForm');
 if(registerForm){
