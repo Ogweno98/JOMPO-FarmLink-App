@@ -166,3 +166,52 @@ if(marketplaceContainer){
     });
   });
 }
+
+// DISPLAY SERVICES
+const servicesContainer = document.getElementById('servicesContainer');
+if(servicesContainer){
+  const renderServices = (services)=>{
+    servicesContainer.innerHTML = '';
+    services.forEach(doc=>{
+      const data = doc.data();
+      servicesContainer.innerHTML += `
+        <div class="bg-white p-4 rounded shadow hover:shadow-lg transition">
+          <h3 class="font-bold text-green-800">${data.name}</h3>
+          <p>Category: ${data.category}</p>
+          <p>Price: KSh ${data.price}</p>
+          <p>Location: ${data.location}</p>
+          <p class="text-sm mt-2">${data.description || ''}</p>
+          <button class="mt-4 px-4 py-2 bg-green-700 text-white rounded hover:bg-green-800">Book Now</button>
+        </div>
+      `;
+    });
+  }
+
+  const fetchServices = async ()=>{
+    const snapshot = await db.collection('services').get();
+    renderServices(snapshot.docs);
+  }
+
+  fetchServices();
+
+  // Filters
+  const searchService = document.getElementById('searchService');
+  const filterServiceLocation = document.getElementById('filterServiceLocation');
+
+  [searchService, filterServiceLocation].forEach(el=>{
+    el.addEventListener('input', async ()=>{
+      const snapshot = await db.collection('services').get();
+      let filtered = snapshot.docs;
+
+      if(searchService.value){
+        filtered = filtered.filter(d=>d.data().name.toLowerCase().includes(searchService.value.toLowerCase()));
+      }
+      if(filterServiceLocation.value){
+        filtered = filtered.filter(d=>d.data().location.toLowerCase().includes(filterServiceLocation.value.toLowerCase()));
+      }
+
+      renderServices(filtered);
+    });
+  });
+}
+
