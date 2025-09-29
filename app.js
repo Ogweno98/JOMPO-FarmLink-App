@@ -1,4 +1,4 @@
-  // ================== FIREBASE SETUP ==================
+ // ================== FIREBASE SETUP ==================
 const firebaseConfig = {
   apiKey: "AIzaSyCK2sZb2_O0K8tq0KWKwmSV8z4He30dcDc",
   authDomain: "jompo-farmlink-web.firebaseapp.com",
@@ -46,6 +46,9 @@ if (registerForm) {
 // ================== LOGIN ==================
 const loginForm = document.getElementById('loginForm');
 if (loginForm) {
+  const loginError = document.getElementById("loginError");
+  const forgotPasswordLink = document.getElementById("forgotPasswordLink");
+
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = document.getElementById('loginEmail').value;
@@ -54,15 +57,47 @@ if (loginForm) {
     try {
       const userCredential = await auth.signInWithEmailAndPassword(email, password);
       if (!userCredential.user.emailVerified) {
-        alert('Please verify your email before logging in.');
+        if (loginError) {
+          loginError.textContent = "Please verify your email before logging in.";
+          loginError.classList.remove("hidden");
+        } else {
+          alert("Please verify your email before logging in.");
+        }
         await auth.signOut();
         return;
       }
       window.location.href = "dashboard.html";
     } catch (err) {
-      alert(err.message);
+      if (loginError) {
+        loginError.textContent = err.message;
+        loginError.classList.remove("hidden");
+      } else {
+        alert(err.message);
+      }
     }
   });
+
+  // Forgot password link
+  if (forgotPasswordLink) {
+    forgotPasswordLink.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("loginEmail").value.trim();
+      if (!email) {
+        loginError.textContent = "Enter your email above first, then click Forgot Password.";
+        loginError.classList.remove("hidden");
+        return;
+      }
+      try {
+        await auth.sendPasswordResetEmail(email);
+        loginError.textContent = "Password reset email sent! Check your inbox.";
+        loginError.classList.remove("hidden");
+        loginError.classList.add("text-green-600");
+      } catch (error) {
+        loginError.textContent = error.message;
+        loginError.classList.remove("hidden");
+      }
+    });
+  }
 }
 
 // ================== LOGOUT ==================
