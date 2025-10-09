@@ -1,181 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Services - JOMPO FarmLink</title>
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Firebase (compat) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <link rel="stylesheet" href="style.css">
+
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body class="bg-green-50 font-sans">
-
-  <!-- Navbar -->
   <nav class="bg-green-800 text-white p-4 flex justify-between items-center">
     <a href="index.html" class="text-2xl font-bold">JOMPO FarmLink</a>
     <div id="authLinks"></div>
   </nav>
 
-  <!-- Services Section -->
   <section class="py-10 px-6 md:px-20">
     <h2 class="text-3xl font-bold text-green-800 mb-6">Agri-Services</h2>
 
-    <!-- Filters -->
     <div class="mb-6 flex flex-col md:flex-row gap-4">
-      <input type="text" id="searchService" placeholder="Search service..."
-             class="px-4 py-2 border rounded w-full md:w-1/3 focus:outline-none focus:ring-2 focus:ring-green-600">
-      <input type="text" id="filterServiceLocation" placeholder="Filter by location"
-             class="px-4 py-2 border rounded w-full md:w-1/3 focus:outline-none focus:ring-2 focus:ring-green-600">
-      <select id="filterServiceCategory"
-              class="px-4 py-2 border rounded w-full md:w-1/3 focus:outline-none focus:ring-2 focus:ring-green-600">
+      <input type="text" id="searchService" placeholder="Search service..." class="px-4 py-2 border rounded w-full md:w-1/3 focus:outline-none focus:ring-2 focus:ring-green-600">
+      <input type="text" id="filterServiceLocation" placeholder="Filter by location" class="px-4 py-2 border rounded w-full md:w-1/3 focus:outline-none focus:ring-2 focus:ring-green-600">
+      <select id="filterServiceCategory" class="px-4 py-2 border rounded w-full md:w-1/3 focus:outline-none focus:ring-2 focus:ring-green-600">
         <option value="">All Categories</option>
       </select>
     </div>
 
-    <!-- Services Listing -->
     <div id="servicesContainer" class="grid md:grid-cols-3 gap-6"></div>
     <p id="noServices" class="text-gray-600 mt-6 hidden">No services found.</p>
   </section>
 
-  <script>
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-
-    async function loadServices() {
-      const container = document.getElementById("servicesContainer");
-      const searchInput = document.getElementById("searchService");
-      const locationInput = document.getElementById("filterServiceLocation");
-      const categorySelect = document.getElementById("filterServiceCategory");
-      const noServices = document.getElementById("noServices");
-
-      if (!container) return;
-
-      try {
-        const snapshot = await db.collection("services").get();
-        let services = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        // Populate category filter
-        const categories = [...new Set(services.map(s => s.category).filter(Boolean))];
-        categories.forEach(cat => {
-          const option = document.createElement("option");
-          option.value = cat;
-          option.textContent = cat;
-          categorySelect.appendChild(option);
-        });
-
-        function renderServices(filtered = services) {
-          container.innerHTML = "";
-          if (!filtered.length) {
-            noServices.classList.remove("hidden");
-            return;
-          } else {
-            noServices.classList.add("hidden");
-          }
-
-          filtered.forEach(service => {
-            const card = document.createElement("div");
-            card.className = "bg-white shadow-md rounded-lg p-4";
-
-            card.innerHTML = `
-              <h3 class="text-xl font-bold text-green-700">${service.name || "Unnamed Service"}</h3>
-              <p class="text-gray-700">Category: ${service.category || "N/A"}</p>
-              <p class="text-gray-700">Location: ${service.location || "Unknown"}</p>
-              <p class="text-gray-900 font-semibold mt-2">Price: KES ${service.price || "0"}</p>
-              <p class="text-sm mt-2">${service.description || ''}</p>
-              <button class="bookServiceBtn mt-4 px-4 py-2 bg-green-700 text-white rounded hover:bg-green-800"
-                      data-id="${service.id}" data-price="${service.price}" data-name="${service.name}">
-                Book Now
-              </button>
-            `;
-            container.appendChild(card);
-          });
-
-          // Attach booking listeners
-          document.querySelectorAll(".bookServiceBtn").forEach(btn => {
-            btn.addEventListener("click", async () => {
-              const serviceId = btn.dataset.id;
-              const servicePrice = btn.dataset.price;
-              const serviceName = btn.dataset.name;
-              const user = auth.currentUser;
-
-              if (!user) {
-                alert("Please login to book a service.");
-                return;
-              }
-
-              const phoneNumber = prompt("Enter your phone number (format 2547XXXXXXXX):");
-              if (!phoneNumber) return;
-
-              // Save booking as pending
-              const bookingRef = await db.collection("bookings").add({
-                serviceId,
-                userId: user.uid,
-                serviceName,
-                price: servicePrice,
-                status: "pending",
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-              });
-
-              try {
-                // Trigger STK Push via your backend
-                const res = await fetch("https://your-server.com/mpesa", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    phoneNumber,
-                    amount: servicePrice,
-                    accountReference: serviceName,
-                    transactionDesc: `Payment for ${serviceName}`
-                  })
-                });
-
-                const data = await res.json();
-
-                if (data.ResponseCode === "0") {
-                  await bookingRef.update({ checkoutRequestID: data.CheckoutRequestID });
-                  alert("STK Push sent! Complete the payment on your phone.");
-                } else {
-                  alert("Error initiating payment: " + data.ResponseDescription);
-                }
-
-              } catch (err) {
-                alert("Payment request failed: " + err.message);
-              }
-            });
-          });
-        }
-
-        function applyFilters() {
-          let filtered = services;
-          const searchVal = searchInput?.value.toLowerCase() || "";
-          const locationVal = locationInput?.value.toLowerCase() || "";
-          const categoryVal = categorySelect?.value || "";
-
-          filtered = filtered.filter(s =>
-            (s.name || "").toLowerCase().includes(searchVal) &&
-            (s.location || "").toLowerCase().includes(locationVal) &&
-            (categoryVal ? s.category === categoryVal : true)
-          );
-
-          renderServices(filtered);
-        }
-
-        searchInput?.addEventListener("input", applyFilters);
-        locationInput?.addEventListener("input", applyFilters);
-        categorySelect?.addEventListener("change", applyFilters);
-
-        renderServices();
-
-      } catch (error) {
-        console.error("Error loading services:", error);
-      }
-    }
-
-    document.addEventListener("DOMContentLoaded", loadServices);
-  </script>
+  <script src="app.js"></script>
 </body>
 </html>
-
-        
