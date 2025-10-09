@@ -1,70 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>JOMPO FarmLink</title>
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Firebase CDN -->
+  <!-- Firebase (compat) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body class="bg-green-50 font-sans">
-  <!-- Navbar -->
+
   <nav class="bg-green-800 text-white p-4 flex justify-between items-center">
     <a href="index.html" class="text-2xl font-bold">JOMPO FarmLink</a>
     <div id="authLinks">
-      <!-- This will be replaced dynamically by app.js -->
       <a href="login.html" class="px-4 py-2 hover:bg-green-700 rounded">Login</a>
       <a href="register.html" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded ml-2">Register</a>
     </div>
   </nav>
 
-  <!-- Hero Section -->
   <section class="text-center py-20 bg-green-100">
-    <h1 class="text-4xl md:text-6xl font-bold text-green-800 mb-4">
-      Connecting Farmers to Buyers & Consumers
-    </h1>
-    <p class="text-green-700 mb-8 text-lg md:text-xl">
-      Sell products, access services, and grow your farm with JOMPO FarmLink
-    </p>
-    <a href="register.html" class="px-6 py-3 bg-green-700 text-white rounded-lg hover:bg-green-800 mr-4">
-      Join as Farmer
-    </a>
-    <a href="marketplace.html" class="px-6 py-3 bg-yellow-500 text-green-900 rounded-lg hover:bg-yellow-400">
-      Browse Marketplace
-    </a>
+    <h1 class="text-4xl md:text-6xl font-bold text-green-800 mb-4">Connecting Farmers to Buyers & Consumers</h1>
+    <p class="text-green-700 mb-8 text-lg md:text-xl">Sell products, access services, and grow your farm with JOMPO FarmLink</p>
+    <a href="register.html" class="px-6 py-3 bg-green-700 text-white rounded-lg hover:bg-green-800 mr-4">Join as Farmer</a>
+    <a href="marketplace.html" class="px-6 py-3 bg-yellow-500 text-green-900 rounded-lg hover:bg-yellow-400">Browse Marketplace</a>
   </section>
 
-  <!-- Features -->
   <section class="py-16 px-6 md:px-20 grid md:grid-cols-3 gap-8 text-center">
     <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
       <h2 class="text-2xl font-bold text-green-800 mb-2">Sell Your Products</h2>
-      <p>Post your farm produce and reach buyers all over Kenya easily.</p>
+      <p>Post your farm produce and reach buyers all over Kenya.</p>
     </div>
     <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
       <h2 class="text-2xl font-bold text-green-800 mb-2">Access Services</h2>
-      <p>Rent tractors, solar panels, and book trainings to grow your farm business.</p>
+      <p>Rent tractors, solar panels, book training and more.</p>
     </div>
     <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
       <h2 class="text-2xl font-bold text-green-800 mb-2">Grow Your Market</h2>
-      <p>Connect directly with buyers and consumers, expand your reach and earn more.</p>
+      <p>Connect directly with buyers and consumers and earn more.</p>
     </div>
   </section>
 
-  <!-- Footer -->
   <footer class="bg-green-800 text-white p-6 text-center">
     <p>© 2025 JOMPO FarmLink | All Rights Reserved</p>
     <p>Contact: info@jompo.org</p>
   </footer>
 
-  <!-- Firebase + App.js -->
   <script src="app.js"></script>
 </body>
 </html>
-
-
