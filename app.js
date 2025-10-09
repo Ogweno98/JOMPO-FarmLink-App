@@ -8,201 +8,306 @@ const firebaseConfig = {
   appId: "1:497296091103:web:72b3e8223ea0cbb306066a"
 };
 
-firebase.initializeApp(firebaseConfig);
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// ================== UTILITY ==================
-function renderItems(container, items, isService=false) {
-  container.innerHTML = '';
-  if (!items.length) return false;
-  items.forEach(item => {
-    container.innerHTML += `
-      <div class="bg-white p-4 rounded shadow hover:shadow-lg transition">
-        <h3 class="font-bold text-green-800">${item.name}</h3>
-        <p>Category: ${item.category}</p>
-        ${item.quantity ? `<p>Quantity: ${item.quantity}</p>` : ''}
-        <p>Price: KSh ${item.price}</p>
-        <p>Location: ${item.location}</p>
-        ${isService && item.description ? `<p class="text-sm mt-2">${item.description}</p>` : ''}
-        ${isService ? `<button class="mt-4 px-4 py-2 bg-green-700 text-white rounded hover:bg-green-800">Book Now</button>` : ''}
-      </div>
+// ---------------------- Navbar Links (auth-aware) ----------------------
+auth.onAuthStateChanged(user => {
+  const authLinks = document.getElementById("authLinks");
+  if (!authLinks) return;
+  if (user) {
+    authLinks.innerHTML = `
+      <span class="mr-4">Hi, ${user.email}</span>
+      <button id="logoutBtn" class="px-3 py-1 bg-red-500 hover:bg-red-600 rounded text-white">Logout</button>
     `;
-  });
-  return true;
-}
-
-function applyFilters(items, filters) {
-  return items.filter(item => 
-    item.name.toLowerCase().includes(filters.search) &&
-    item.location.toLowerCase().includes(filters.location) &&
-    (filters.category ? item.category === filters.category : true)
-  );
-}
-
-// ================== AUTH ==================
-function setupAuth() {
-  const registerForm = document.getElementById('registerForm');
-  const loginForm = document.getElementById('loginForm');
-  const logoutBtn = document.getElementById('logoutBtn');
-
-  if (registerForm) {
-    registerForm.addEventListener('submit', async e => {
-      e.preventDefault();
-      const name = document.getElementById('name').value;
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      const location = document.getElementById('location').value;
-      const role = document.getElementById('role').value;
-      try {
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-        const user = userCredential.user;
-        await db.collection('users').doc(user.uid).set({ name, email, location, role, verified:false });
-        await user.sendEmailVerification();
-        alert('Registration successful! Verify your email.');
-        registerForm.reset();
-      } catch (err) { alert(err.message); }
-    });
+    document.getElementById('logoutBtn').addEventListener('click', () => auth.signOut());
+  } else {
+    authLinks.innerHTML = `
+      <a href="login.html" class="px-4 py-2">Login</a>
+      <a href="register.html" class="px-4 py-2 bg-green-500 hover:bg-green-600 rounded text-white">Register</a>
+    `;
   }
+});
 
-  if (loginForm) {
-    const loginError = document.getElementById("loginError");
-    loginForm.addEventListener('submit', async e => {
+// ================== REGISTER ==================
+const registerForm = document.getElementById('registerForm');
+if (registerForm) {
+  registerForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const name = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const location = document.getElementById('location').value.trim();
+    const role = document.getElementById('role').value;
+
+    try {
+      const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+      const user = userCredential.user;
+      await db.collection('users').doc(user.uid).set({ name, email, location, role, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+      await user.sendEmailVerification();
+      document.getElementById('message').classList.add('text-green-600');
+      document.getElementById('message').textContent = 'Registration successful. Check your email to verify.';
+      registerForm.reset();
+      setTimeout(() => window.location.href = 'login.html', 3000);
+    } catch (err) {
+      document.getElementById('message').classList.add('text-red-600');
+      document.getElementById('message').textContent = err.message;
+    }
+  });
+}
+
+// ================== LOGIN ==================
+const loginForm = document.getElementById('loginForm');
+if (loginForm) {
+  loginForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const loginError = document.getElementById('loginError');
+
+    try {
+      const userCred = await auth.signInWithEmailAndPassword(email, password);
+      if (!userCred.user.emailVerified) {
+        if (loginError) { loginError.textContent = 'Please verify your email before logging in.'; loginError.classList.remove('hidden'); }
+        await auth.signOut();
+        return;
+      }
+      window.location.href = 'dashboard.html';
+    } catch (err) {
+      if (loginError) { loginError.textContent = err.message; loginError.classList.remove('hidden'); }
+      else alert(err.message);
+    }
+  });
+
+  // forgot password link
+  const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+  if (forgotPasswordLink) {
+    forgotPasswordLink.addEventListener('click', async e => {
       e.preventDefault();
-      const email = document.getElementById('loginEmail').value;
-      const password = document.getElementById('loginPassword').value;
+      const email = document.getElementById('loginEmail').value.trim();
+      const loginError = document.getElementById('loginError');
+      if (!email) {
+        if (loginError) { loginError.textContent = 'Enter email then click Forgot Password'; loginError.classList.remove('hidden'); }
+        return;
+      }
       try {
-        const userCredential = await auth.signInWithEmailAndPassword(email, password);
-        if (!userCredential.user.emailVerified) {
-          if (loginError) { loginError.textContent = "Verify email first."; loginError.classList.remove("hidden"); }
-          await auth.signOut();
-          return;
-        }
-        window.location.href = "dashboard.html";
+        await auth.sendPasswordResetEmail(email);
+        if (loginError) { loginError.textContent = 'Password reset email sent. Check your inbox.'; loginError.classList.remove('hidden'); loginError.classList.add('text-green-600'); }
       } catch (err) {
-        if (loginError) { loginError.textContent = err.message; loginError.classList.remove("hidden"); }
-        else alert(err.message);
+        if (loginError) { loginError.textContent = err.message; loginError.classList.remove('hidden'); }
       }
     });
   }
-
-  if (logoutBtn) logoutBtn.addEventListener('click', () => auth.signOut().then(()=> window.location.href='index.html'));
 }
 
-// ================== DASHBOARD ==================
-function setupDashboard() {
-  const listingsContainer = document.getElementById('listingsContainer');
-  const addListingForm = document.getElementById('addListingForm');
-  if (!listingsContainer && !addListingForm) return;
+// ================== LOGOUT BUTTON (dashboard.html separate) ==================
+const logoutBtn = document.getElementById('logoutBtn');
+if (logoutBtn) logoutBtn.addEventListener('click', () => auth.signOut().then(() => window.location.href = 'index.html'));
 
+// ================== ADD LISTING (dashboard) ==================
+const addListingForm = document.getElementById('addListingForm');
+if (addListingForm) {
+  addListingForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const name = document.getElementById('productName').value.trim();
+    const category = document.getElementById('category').value;
+    const quantity = document.getElementById('quantity').value || null;
+    const price = document.getElementById('price').value;
+    const location = document.getElementById('locationListing').value.trim();
+    const user = auth.currentUser;
+    if (!user) return alert('Not logged in');
+
+    const listingData = { name, category, quantity, price, location, farmerID: user.uid, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+    try {
+      if (category === 'service') await db.collection('services').add(listingData);
+      else await db.collection('listings').add(listingData);
+      alert('Listing added!');
+      addListingForm.reset();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  });
+}
+
+// ================== DASHBOARD: show user's listings & services ==================
+const listingsContainer = document.getElementById('listingsContainer');
+if (listingsContainer) {
   auth.onAuthStateChanged(async user => {
     if (!user) return window.location.href = 'login.html';
+    listingsContainer.innerHTML = '';
 
-    const fetchUserItems = async () => {
-      const listingsSnap = await db.collection('listings').where('farmerID','==',user.uid).get();
-      const servicesSnap = await db.collection('services').where('farmerID','==',user.uid).get();
-      const allItems = [...listingsSnap.docs.map(d=>({...d.data()})), ...servicesSnap.docs.map(d=>({...d.data()}))];
-      renderItems(listingsContainer, allItems);
-    };
+    // user's products
+    const prodSnap = await db.collection('listings').where('farmerID','==', user.uid).get();
+    prodSnap.forEach(doc => {
+      const d = doc.data();
+      listingsContainer.innerHTML += `
+        <div class="bg-white p-4 rounded shadow">
+          <h3 class="font-bold text-green-800">${d.name}</h3>
+          <p>Category: ${d.category}</p>
+          <p>Quantity: ${d.quantity || '-'}</p>
+          <p>Price: KSh ${d.price}</p>
+          <p>Location: ${d.location}</p>
+        </div>
+      `;
+    });
 
-    fetchUserItems();
-
-    if (addListingForm) {
-      addListingForm.addEventListener('submit', async e => {
-        e.preventDefault();
-        const name = document.getElementById('productName').value;
-        const category = document.getElementById('category').value;
-        const quantity = document.getElementById('quantity').value;
-        const price = document.getElementById('price').value;
-        const location = document.getElementById('locationListing').value;
-        const data = { name, category, quantity, price, location, farmerID:user.uid, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
-        if (category==='service') await db.collection('services').add(data);
-        else await db.collection('listings').add(data);
-        addListingForm.reset();
-        fetchUserItems();
-      });
-    }
+    // user's services
+    const svcSnap = await db.collection('services').where('farmerID','==', user.uid).get();
+    svcSnap.forEach(doc => {
+      const d = doc.data();
+      listingsContainer.innerHTML += `
+        <div class="bg-white p-4 rounded shadow">
+          <h3 class="font-bold text-green-800">${d.name}</h3>
+          <p>Category: ${d.category}</p>
+          <p>Price: KSh ${d.price}</p>
+          <p>Location: ${d.location}</p>
+        </div>
+      `;
+    });
   });
 }
 
 // ================== MARKETPLACE ==================
-function setupMarketplace() {
-  const container = document.getElementById('marketplaceContainer');
-  if (!container) return;
+const marketplaceContainer = document.getElementById('marketplaceContainer');
+if (marketplaceContainer) {
   const noResults = document.getElementById('noResults');
+
+  // helper to render docs array
+  function renderListings(docs) {
+    marketplaceContainer.innerHTML = '';
+    if (!docs || docs.length === 0) {
+      if (noResults) noResults.classList.remove('hidden');
+      return;
+    }
+    if (noResults) noResults.classList.add('hidden');
+    docs.forEach(doc => {
+      const d = doc.data();
+      marketplaceContainer.innerHTML += `
+        <div class="bg-white p-4 rounded shadow hover:shadow-lg transition">
+          <h3 class="font-bold text-green-800">${d.name}</h3>
+          <p>Category: ${d.category}</p>
+          ${d.quantity ? `<p>Quantity: ${d.quantity}</p>` : ''}
+          <p>Price: KSh ${d.price}</p>
+          <p>Location: ${d.location}</p>
+        </div>
+      `;
+    });
+  }
+
+  async function fetchAndRenderAll() {
+    const snapshot = await db.collection('listings').get();
+    renderListings(snapshot.docs);
+    // populate categories select
+    const catSel = document.getElementById('filterCategory');
+    if (catSel) {
+      const cats = new Set();
+      snapshot.docs.forEach(d => { if (d.data().category) cats.add(d.data().category); });
+      cats.forEach(c => { if (![...catSel.options].some(o=>o.value===c)) { const o=document.createElement('option'); o.value=c; o.text=c; catSel.appendChild(o);} });
+    }
+  }
+
+  fetchAndRenderAll();
+
+  // filters logic
   const searchInput = document.getElementById('searchInput');
   const filterLocation = document.getElementById('filterLocation');
   const filterCategory = document.getElementById('filterCategory');
 
-  let allItems = [];
-
-  const fetchAll = async () => {
-    const listingsSnap = await db.collection('listings').get();
-    const servicesSnap = await db.collection('services').get();
-    allItems = [...listingsSnap.docs.map(d=>({...d.data()})), ...servicesSnap.docs.map(d=>({...d.data()}))];
-
-    // populate category dropdown
-    if (filterCategory) {
-      const cats = [...new Set(allItems.map(i=>i.category).filter(Boolean))];
-      filterCategory.innerHTML = '<option value="">All Categories</option>';
-      cats.forEach(cat => { const opt = document.createElement('option'); opt.value = cat; opt.textContent=cat; filterCategory.appendChild(opt); });
-    }
-
-    if (!renderItems(container, allItems)) noResults.classList.remove('hidden');
-    else noResults.classList.add('hidden');
-  };
-
-  const filterItems = () => {
-    const filters = {
-      search: searchInput?.value.toLowerCase()||'',
-      location: filterLocation?.value.toLowerCase()||'',
-      category: filterCategory?.value||''
-    };
-    const filtered = applyFilters(allItems, filters);
-    if (!renderItems(container, filtered)) noResults.classList.remove('hidden');
-    else noResults.classList.add('hidden');
-  };
-
-  [searchInput, filterLocation, filterCategory].forEach(el=>{
-    if(el) el.addEventListener('input', filterItems);
-    if(el===filterCategory) el.addEventListener('change', filterItems);
+  [searchInput, filterLocation, filterCategory].forEach(el => {
+    if (!el) return;
+    el.addEventListener('input', async () => {
+      const snapshot = await db.collection('listings').get();
+      let docs = snapshot.docs;
+      if (searchInput && searchInput.value) docs = docs.filter(d => d.data().name?.toLowerCase().includes(searchInput.value.toLowerCase()));
+      if (filterLocation && filterLocation.value) docs = docs.filter(d => d.data().location?.toLowerCase().includes(filterLocation.value.toLowerCase()));
+      if (filterCategory && filterCategory.value) docs = docs.filter(d => d.data().category === filterCategory.value);
+      renderListings(docs);
+    });
   });
-
-  fetchAll();
 }
 
 // ================== SERVICES PAGE ==================
-function setupServicesPage() {
-  const container = document.getElementById('servicesContainer');
-  if (!container) return;
-  const searchService = document.getElementById('searchService');
-  const filterLocation = document.getElementById('filterServiceLocation');
+const servicesContainer = document.getElementById('servicesContainer');
+if (servicesContainer) {
+  const noServices = document.getElementById('noServices');
 
-  let servicesItems = [];
+  function renderServices(docs) {
+    servicesContainer.innerHTML = '';
+    if (!docs || docs.length === 0) {
+      if (noServices) noServices.classList.remove('hidden');
+      return;
+    }
+    if (noServices) noServices.classList.add('hidden');
+    docs.forEach(doc => {
+      const d = doc.data();
+      servicesContainer.innerHTML += `
+        <div class="bg-white p-4 rounded shadow hover:shadow-lg transition">
+          <h3 class="font-bold text-green-800">${d.name}</h3>
+          <p>Category: ${d.category}</p>
+          <p>Price: KSh ${d.price}</p>
+          <p>Location: ${d.location}</p>
+          <p class="text-sm mt-2">${d.description || ''}</p>
+          <button class="mt-4 px-4 py-2 bg-green-700 text-white rounded hover:bg-green-800">Book Now</button>
+        </div>
+      `;
+    });
+  }
 
-  const fetchServices = async () => {
-    const snap = await db.collection('services').get();
-    servicesItems = snap.docs.map(d=>({...d.data()}));
-    renderItems(container, servicesItems, true);
-  };
-
-  const updateServices = () => {
-    const filters = { search: searchService?.value.toLowerCase()||'', location: filterLocation?.value.toLowerCase()||'', category:'' };
-    renderItems(container, applyFilters(servicesItems, filters), true);
-  };
-
-  [searchService, filterLocation].forEach(el => { if(el) el.addEventListener('input', updateServices); });
+  async function fetchServices() {
+    const snapshot = await db.collection('services').get();
+    renderServices(snapshot.docs);
+    // populate service categories
+    const catSel = document.getElementById('filterServiceCategory');
+    if (catSel) {
+      const cats = new Set();
+      snapshot.docs.forEach(d => { if (d.data().category) cats.add(d.data().category); });
+      cats.forEach(c => { if (![...catSel.options].some(o=>o.value===c)) { const o=document.createElement('option'); o.value=c; o.text=c; catSel.appendChild(o);} });
+    }
+  }
 
   fetchServices();
+
+  const searchService = document.getElementById('searchService');
+  const filterServiceLocation = document.getElementById('filterServiceLocation');
+  const filterServiceCategory = document.getElementById('filterServiceCategory');
+
+  [searchService, filterServiceLocation, filterServiceCategory].forEach(el => {
+    if (!el) return;
+    el.addEventListener('input', async () => {
+      const snapshot = await db.collection('services').get();
+      let docs = snapshot.docs;
+      if (searchService && searchService.value) docs = docs.filter(d => d.data().name?.toLowerCase().includes(searchService.value.toLowerCase()));
+      if (filterServiceLocation && filterServiceLocation.value) docs = docs.filter(d => d.data().location?.toLowerCase().includes(filterServiceLocation.value.toLowerCase()));
+      if (filterServiceCategory && filterServiceCategory.value) docs = docs.filter(d => d.data().category === filterServiceCategory.value);
+      renderServices(docs);
+    });
+  });
 }
 
-// ================== INIT ==================
-document.addEventListener('DOMContentLoaded', () => {
-  setupAuth();
-  setupDashboard();
-  setupMarketplace();
-  setupServicesPage();
-});
+// ================== AI DASHBOARD INTEGRATION ==================
+const askAIDashboardBtn = document.getElementById('askAIDashboard');
+if (askAIDashboardBtn) {
+  askAIDashboardBtn.addEventListener('click', async () => {
+    const query = document.getElementById('aiQueryDashboard').value.trim();
+    const responseBox = document.getElementById('aiDashboardResponse');
+    const responseText = document.getElementById('aiDashboardText');
+    if (!query) return alert('Please type a question for the AI.');
+    responseText.textContent = 'Analyzing your question...';
+    responseBox.classList.remove('hidden');
 
-
+    try {
+      const res = await fetch('https://us-central1-jompo-farmlink-web.cloudfunctions.net/askAI', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query })
+      });
+      const data = await res.json();
+      responseText.textContent = data.reply || 'AI could not process this query.';
+    } catch (err) {
+      console.error(err);
+      responseText.textContent = 'Error connecting to AI service.';
+    }
+  });
+}
 
