@@ -1,155 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Dashboard - JOMPO FarmLink</title>
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Firebase (compat) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <link rel="stylesheet" href="style.css">
+
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body class="bg-green-50 font-sans">
-
-  <!-- Navbar -->
   <nav class="bg-green-800 text-white p-4 flex justify-between items-center">
     <a href="index.html" class="text-2xl font-bold">JOMPO FarmLink</a>
     <button id="logoutBtn" class="px-4 py-2 hover:bg-green-700 rounded">Logout</button>
   </nav>
 
-  <!-- Add Listing Section -->
   <section class="py-10 px-6 md:px-20">
     <h2 class="text-3xl font-bold text-green-800 mb-6">Add Product / Service</h2>
     <form id="addListingForm" class="bg-white p-6 rounded-lg shadow-md space-y-4">
-      <input type="text" id="productName" placeholder="Product / Service Name" required
-             class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
+      <input type="text" id="productName" placeholder="Product / Service Name" required class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
       <select id="category" class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
         <option value="product">Product</option>
         <option value="service">Service</option>
       </select>
-      <input type="number" id="quantity" placeholder="Quantity (leave empty if service)"
-             class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
-      <input type="number" id="price" placeholder="Price (KSh)" required
-             class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
-      <input type="text" id="locationListing" placeholder="Location" required
-             class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
-      <button type="submit" class="py-2 px-6 bg-green-700 text-white rounded hover:bg-green-800">
-        Add Listing
-      </button>
+      <input type="number" id="quantity" placeholder="Quantity (leave empty if service)" class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
+      <input type="number" id="price" placeholder="Price (KSh)" required class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
+      <input type="text" id="locationListing" placeholder="Location" required class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
+      <button type="submit" class="py-2 px-6 bg-green-700 text-white rounded hover:bg-green-800">Add Listing</button>
     </form>
 
-    <!-- Your Listings -->
     <h2 class="text-3xl font-bold text-green-800 mt-12 mb-6">Your Listings</h2>
     <div id="listingsContainer" class="grid md:grid-cols-3 gap-6"></div>
+  </section>
 
-    <!-- Service Bookings -->
-    <h2 class="text-3xl font-bold text-green-800 mt-12 mb-6">Service Bookings</h2>
-    <div id="bookingsContainer" class="grid md:grid-cols-1 gap-6"></div>
-    <p id="noBookings" class="text-gray-600 mt-6 hidden">No bookings found.</p>
+  <!-- AI Farming Assistant (dashboard integrated) -->
+  <section class="py-10 px-6 md:px-20 bg-green-100 mt-10 rounded">
+    <h2 class="text-2xl font-bold text-green-800 mb-4">AI Farming Assistant</h2>
+    <p class="text-gray-700 mb-4">Ask questions about crops, soil, pests or services. The AI will reply with practical guidance.</p>
+
+    <div class="flex flex-col gap-3">
+      <textarea id="aiQueryDashboard" rows="3" class="p-3 border rounded focus:ring-2 focus:ring-green-600" placeholder="e.g., How to store maize to avoid weevils?"></textarea>
+      <button id="askAIDashboard" class="bg-green-700 text-white px-6 py-2 rounded hover:bg-green-800 w-fit">Ask AI</button>
+    </div>
+
+    <div id="aiDashboardResponse" class="hidden mt-6 bg-white shadow p-4 rounded">
+      <h3 class="font-bold text-green-700 mb-2">AI Response:</h3>
+      <p id="aiDashboardText" class="text-gray-800 whitespace-pre-line"></p>
+    </div>
   </section>
 
   <script src="app.js"></script>
-
-  <script>
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-
-    document.addEventListener("DOMContentLoaded", async () => {
-      const form = document.getElementById("addListingForm");
-      const listingsContainer = document.getElementById("listingsContainer");
-      const bookingsContainer = document.getElementById("bookingsContainer");
-      const noBookings = document.getElementById("noBookings");
-
-      // Logout
-      document.getElementById("logoutBtn").addEventListener("click", () => {
-        auth.signOut().then(() => window.location.href = "index.html");
-      });
-
-      // Add Listing / Service
-      form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const name = document.getElementById("productName").value;
-        const category = document.getElementById("category").value;
-        const quantity = document.getElementById("quantity").value || null;
-        const price = document.getElementById("price").value;
-        const location = document.getElementById("locationListing").value;
-        const user = auth.currentUser;
-
-        if (!user) { alert("Please login"); return; }
-
-        const listingData = { name, category, quantity, price, location, farmerID: user.uid, createdAt: new Date() };
-
-        try {
-          if (category === "product") await db.collection("listings").add(listingData);
-          else await db.collection("services").add(listingData);
-
-          form.reset();
-          alert("Listing added successfully!");
-        } catch (err) {
-          console.error("Error adding listing:", err);
-          alert("Failed to add listing.");
-        }
-      });
-
-      // Render Listings
-      function renderListing(doc) {
-        const item = doc.data();
-        const div = document.createElement("div");
-        div.className = "bg-white shadow-md rounded-lg p-4";
-        div.innerHTML = `
-          <h3 class="font-bold text-lg text-green-800">${item.name}</h3>
-          <p><strong>Category:</strong> ${item.category}</p>
-          ${item.quantity ? `<p><strong>Quantity:</strong> ${item.quantity}</p>` : ""}
-          <p><strong>Price:</strong> KSh ${item.price}</p>
-          <p><strong>Location:</strong> ${item.location}</p>
-        `;
-        listingsContainer.appendChild(div);
-      }
-
-      db.collection("listings").onSnapshot(snapshot => {
-        listingsContainer.innerHTML = "";
-        snapshot.forEach(doc => renderListing(doc));
-      });
-      db.collection("services").onSnapshot(snapshot => {
-        snapshot.forEach(doc => renderListing(doc));
-      });
-
-      // Render Bookings
-      function renderBooking(doc) {
-        const b = doc.data();
-        const div = document.createElement("div");
-        div.className = "bg-white shadow-md rounded-lg p-4";
-        div.innerHTML = `
-          <h3 class="font-bold text-lg text-green-800">${b.serviceName}</h3>
-          <p><strong>Booked By:</strong> ${b.userId}</p>
-          <p><strong>Price:</strong> KSh ${b.price}</p>
-          <p><strong>Status:</strong> <span class="capitalize">${b.status}</span></p>
-          <p><small>${b.createdAt?.toDate?.() || ""}</small></p>
-        `;
-        bookingsContainer.appendChild(div);
-      }
-
-      auth.onAuthStateChanged(user => {
-        if (user) {
-          // Show bookings for this user
-          db.collection("bookings")
-            .where("userId", "==", user.uid)
-            .onSnapshot(snapshot => {
-              bookingsContainer.innerHTML = "";
-              if (snapshot.empty) noBookings.classList.remove("hidden");
-              else noBookings.classList.add("hidden");
-              snapshot.forEach(doc => renderBooking(doc));
-            });
-        } else {
-          window.location.href = "login.html";
-        }
-      });
-    });
-  </script>
-
 </body>
 </html>
-
-
 
