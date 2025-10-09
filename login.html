@@ -1,64 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Login - JOMPO FarmLink</title>
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Firebase CDN -->
+  <!-- Firebase (compat) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body class="bg-green-50 font-sans">
-  <!-- Navbar -->
   <nav class="bg-green-800 text-white p-4 flex justify-between items-center">
     <a href="index.html" class="text-2xl font-bold">JOMPO FarmLink</a>
-    <div id="authLinks">
-      <!-- Dynamically replaced by app.js -->
-      <a href="register.html" class="px-4 py-2 hover:bg-green-700 rounded">Register</a>
-    </div>
+    <a href="register.html" class="px-4 py-2 hover:bg-green-700 rounded">Register</a>
   </nav>
 
-  <!-- Login Section -->
   <section class="flex justify-center items-center py-20">
     <div class="bg-white p-10 rounded-lg shadow-md w-full max-w-md">
       <h2 class="text-3xl font-bold text-green-800 mb-6 text-center">Login</h2>
       <form id="loginForm" class="space-y-4">
-        <input 
-          type="email" 
-          id="loginEmail" 
-          placeholder="Email" 
-          required 
-          class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
-        
-        <input 
-          type="password" 
-          id="loginPassword" 
-          placeholder="Password" 
-          required 
-          class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
-        
-        <button type="submit" class="w-full py-2 bg-green-700 text-white rounded hover:bg-green-800">
-          Login
-        </button>
+        <input type="email" id="loginEmail" placeholder="Email" required class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
+        <input type="password" id="loginPassword" placeholder="Password" required class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600">
+        <button type="submit" class="w-full py-2 bg-green-700 text-white rounded hover:bg-green-800">Login</button>
       </form>
 
-      <!-- Error feedback -->
       <p id="loginError" class="text-red-600 text-sm mt-3 hidden"></p>
 
-      <!-- Forgot password -->
       <div class="text-center mt-4">
         <a href="#" id="forgotPasswordLink" class="text-green-700 hover:underline">Forgot Password?</a>
       </div>
     </div>
   </section>
 
-  <!-- App logic -->
   <script src="app.js"></script>
 </body>
 </html>
-
