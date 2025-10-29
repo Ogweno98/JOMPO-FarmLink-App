@@ -1,119 +1,106 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Weather & AI Assistant - JOMPO FarmLink</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Weather AI Assistant - JOMPO FarmLink</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body class="bg-green-50 min-h-screen flex flex-col">
 
-  <!-- 🌿 Navbar -->
+<body class="bg-green-50">
+  <!-- Navigation -->
   <nav class="bg-green-800 text-white p-4 flex justify-between items-center">
-    <a href="index.html" class="text-2xl font-bold">JOMPO FarmLink</a>
-    <div id="authLinks"></div>
+    <a href="dashboard.html" class="text-2xl font-bold">JOMPO FarmLink</a>
+    <div>
+      <a href="index.html" class="hover:underline">Home</a>
+    </div>
   </nav>
 
-  <!-- 🌤️ Weather Section -->
-  <section class="flex-1 p-6 max-w-3xl mx-auto">
-    <h2 class="text-3xl font-bold text-green-800 mb-6">🌦️ Weather Insights</h2>
-    <p class="mb-4 text-gray-700">Get real-time weather updates for your farm location. Enter your city or region below.</p>
+  <!-- Weather Section -->
+  <section class="p-6 max-w-3xl mx-auto">
+    <h2 class="text-3xl font-bold text-green-800 mb-6">Weather AI Assistant</h2>
+    <p class="text-gray-700 mb-4">
+      Get real-time weather forecasts, AI farming insights, and recommendations based on your area.
+    </p>
 
-    <div class="flex gap-3 mb-6">
-      <input id="cityInput" type="text" placeholder="Enter city name e.g. Kisumu" class="flex-1 border rounded px-3 py-2 focus:ring-2 focus:ring-green-700" />
-      <button id="getWeatherBtn" class="bg-green-700 text-white px-5 py-2 rounded hover:bg-green-800">Get Weather</button>
+    <!-- Input -->
+    <div class="flex space-x-2">
+      <input
+        id="locationInput"
+        type="text"
+        class="w-full p-3 border rounded focus:ring-2 focus:ring-green-700"
+        placeholder="Enter your location e.g. Kisumu, Kenya"
+      />
+      <button
+        id="getWeather"
+        class="bg-green-700 text-white px-5 py-2 rounded hover:bg-green-800"
+      >
+        Get Weather
+      </button>
     </div>
 
     <!-- Weather Display -->
-    <div id="weatherResult" class="hidden bg-white p-5 rounded shadow-lg border-t-4 border-green-600">
-      <h3 id="weatherCity" class="text-xl font-bold text-green-700 mb-2"></h3>
-      <p id="weatherDesc" class="text-gray-700 mb-1"></p>
-      <p id="weatherTemp" class="text-2xl font-semibold text-green-800"></p>
-      <p id="weatherHumidity" class="text-gray-600"></p>
-      <p id="weatherWind" class="text-gray-600"></p>
+    <div id="weatherData" class="mt-6 bg-white shadow p-4 rounded hidden">
+      <h3 class="font-bold text-green-700 mb-2">Weather Update:</h3>
+      <p id="weatherText" class="text-gray-800 whitespace-pre-line"></p>
     </div>
 
-    <!-- AI Weather Assistant -->
-    <div class="mt-10">
-      <h2 class="text-2xl font-bold text-green-800 mb-4">🤖 Ask the AI Assistant about Weather & Crops</h2>
-      <textarea id="weatherAIInput" rows="3" class="w-full p-3 border rounded focus:ring-2 focus:ring-green-700" placeholder="e.g., How will the weather affect maize planting in Kisumu?"></textarea>
-      <button id="askWeatherAI" class="mt-3 bg-green-700 text-white px-5 py-2 rounded hover:bg-green-800">Ask AI</button>
-
-      <div id="weatherAIResponse" class="mt-6 bg-white shadow p-4 rounded hidden">
-        <h3 class="font-bold text-green-700 mb-2">AI Response:</h3>
-        <p id="weatherAIText" class="text-gray-800 whitespace-pre-line"></p>
-      </div>
+    <!-- AI Weather Insights -->
+    <div id="aiInsights" class="mt-6 bg-white shadow p-4 rounded hidden">
+      <h3 class="font-bold text-green-700 mb-2">AI Agricultural Advice:</h3>
+      <p id="aiAdvice" class="text-gray-800 whitespace-pre-line"></p>
     </div>
   </section>
 
-  <!-- 🌿 Floating Chatbot (Global Assistant) -->
-  <div id="chatbot"></div>
-  <script src="chatbot.js"></script>
-
-  <!-- 🌍 Firebase + Weather + AI -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <script src="app.js"></script>
-
   <script>
-    // 🌍 Weather API (OpenWeatherMap)
-    const API_KEY = "135d22bf14054c7c8e491349252910"; // <-- insert your API key here
+    const weatherKey = "https://api.open-meteo.com/v1/forecast";
 
-    document.getElementById('getWeatherBtn').addEventListener('click', async () => {
-      const city = document.getElementById('cityInput').value.trim();
-      if (!city) return alert('Please enter a city name.');
+    document.getElementById("getWeather").addEventListener("click", async () => {
+      const location = document.getElementById("locationInput").value.trim();
+      if (!location) return alert("Please enter a location");
 
-      const weatherBox = document.getElementById('weatherResult');
-      const cityElem = document.getElementById('weatherCity');
-      const descElem = document.getElementById('weatherDesc');
-      const tempElem = document.getElementById('weatherTemp');
-      const humElem = document.getElementById('weatherHumidity');
-      const windElem = document.getElementById('weatherWind');
-
-      cityElem.textContent = "Loading...";
-      weatherBox.classList.remove('hidden');
+      document.getElementById("weatherData").classList.remove("hidden");
+      document.getElementById("weatherText").textContent = "Fetching weather data...";
 
       try {
-        const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`);
-        const data = await res.json();
+        // Get coordinates from Open Meteo Geocoding API
+        const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${location}`);
+        const geoData = await geoRes.json();
+        if (!geoData.results || geoData.results.length === 0)
+          return alert("Location not found. Try another name.");
 
-        if (data.cod !== 200) throw new Error(data.message);
+        const { latitude, longitude, name, country } = geoData.results[0];
 
-        cityElem.textContent = `${data.name}, ${data.sys.country}`;
-        descElem.textContent = `Condition: ${data.weather[0].description}`;
-        tempElem.textContent = `🌡 Temperature: ${data.main.temp}°C`;
-        humElem.textContent = `💧 Humidity: ${data.main.humidity}%`;
-        windElem.textContent = `🌬 Wind Speed: ${data.wind.speed} m/s`;
-      } catch (err) {
-        cityElem.textContent = 'Error fetching weather data.';
-        descElem.textContent = err.message;
-        tempElem.textContent = '';
-        humElem.textContent = '';
-        windElem.textContent = '';
-      }
-    });
+        // Fetch weather data
+        const weatherRes = await fetch(
+          `${weatherKey}?latitude=${latitude}&longitude=${longitude}&current_weather=true`
+        );
+        const weatherData = await weatherRes.json();
 
-    // 🤖 Weather AI Assistant
-    document.getElementById('askWeatherAI').addEventListener('click', async () => {
-      const question = document.getElementById('weatherAIInput').value.trim();
-      if (!question) return alert('Please type a question.');
-      const resBox = document.getElementById('weatherAIResponse');
-      const resText = document.getElementById('weatherAIText');
-      resBox.classList.remove('hidden');
-      resText.textContent = 'Thinking...';
+        const temp = weatherData.current_weather.temperature;
+        const wind = weatherData.current_weather.windspeed;
+        const weatherInfo = `Location: ${name}, ${country}\nTemperature: ${temp}°C\nWind Speed: ${wind} km/h`;
 
-      try {
-        const res = await fetch('https://us-central1-jompo-farmlink-web.cloudfunctions.net/askAI', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: question })
+        document.getElementById("weatherText").textContent = weatherInfo;
+
+        // Show AI recommendation
+        document.getElementById("aiInsights").classList.remove("hidden");
+        document.getElementById("aiAdvice").textContent = "Generating AI farming insights...";
+
+        const aiRes = await fetch("https://us-central1-jompo-farmlink-web.cloudfunctions.net/askAI", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: `Based on ${temp}°C and ${wind} km/h wind in ${name}, Kenya, what should farmers do today?`,
+          }),
         });
-        const data = await res.json();
-        resText.textContent = data.reply || 'No AI response.';
-      } catch (err) {
-        resText.textContent = 'Error connecting to AI service.';
+        const aiData = await aiRes.json();
+        document.getElementById("aiAdvice").textContent =
+          aiData.reply || "AI could not generate a response.";
+      } catch (error) {
+        document.getElementById("weatherText").textContent = "Error fetching weather data.";
+        console.error(error);
       }
     });
   </script>
