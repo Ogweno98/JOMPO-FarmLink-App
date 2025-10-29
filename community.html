@@ -1,48 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Community | JOMPO</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Community | JOMPO FarmLink</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <nav class="navbar">
-    <a href="index.html">Home</a>
-    <a href="dashboard.html">Dashboard</a>
+    <a href="index.html">Dashboard</a>
     <a href="farm-records.html">Farm Records</a>
     <a href="market-access.html">Market Access</a>
     <a href="community.html" class="active">Community</a>
     <a href="support.html">Support</a>
   </nav>
 
-  <section class="content">
-    <h1>Community</h1>
-    <p>Join discussions, share knowledge, and connect with other farmers.</p>
+  <main>
+    <h1>Community Forum</h1>
+    <p>Connect with other farmers, share experiences, and discuss ideas.</p>
 
-    <div class="forum">
-      <div class="post">
-        <h3>John Ouma</h3>
-        <p>Has anyone tried organic pest control methods? What worked best for you?</p>
-      </div>
+    <form id="communityForm">
+      <input type="text" id="userName" placeholder="Your Name" required />
+      <textarea id="message" placeholder="Share something..." required></textarea>
+      <button type="submit">Post</button>
+    </form>
 
-      <div class="post">
-        <h3>Mary Atieno</h3>
-        <p>Looking for maize buyers around Kisumu County. Any leads?</p>
-      </div>
+    <ul id="communityPosts"></ul>
+  </main>
 
-      <div class="post">
-        <h3>Peter Otieno</h3>
-        <p>I’ve been experimenting with drip irrigation — saved over 30% on water usage!</p>
-      </div>
-    </div>
-
-    <div class="nav-buttons">
-      <button onclick="history.back()">⬅ Back</button>
-      <button onclick="history.forward()">Forward ➡</button>
-    </div>
-  </section>
-  <script src="navbar.js"></script>
-
+  <script src="app.js"></script>
 </body>
 </html>
