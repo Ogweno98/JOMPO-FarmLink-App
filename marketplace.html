@@ -14,8 +14,6 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body class="bg-green-50 font-sans">
-  
-
   <nav class="bg-green-800 text-white p-4 flex justify-between items-center">
     <a href="index.html" class="text-2xl font-bold">JOMPO FarmLink</a>
     <div id="authLinks"></div>
@@ -38,10 +36,86 @@
 
   <script src="app.js"></script>
   <!-- 🌿 JOMPO Floating Chatbot -->
-<div id="chatbot"></div>
-<script src="chatbot.js"></script>
-<script src="navbar.js"></script>
+  <div id="chatbot"></div>
+  <script src="chatbot.js"></script>
+  <script src="navbar.js"></script>
 
+  <!-- Intercept internal links and check target before navigating (prevents surprise 404s) -->
+  <script>
+    (function () {
+      // Only run for same-origin links (internal)
+      async function checkAndNavigate(url, anchor) {
+        try {
+          // Do a HEAD request first to see if file exists (GitHub Pages supports HEAD)
+          const resp = await fetch(url, { method: 'HEAD' });
+          if (resp.ok) {
+            // file exists — allow normal navigation
+            window.location.href = url;
+          } else {
+            // not found or other error — show helpful modal/alert
+            showNotFound(url, resp.status);
+          }
+        } catch (err) {
+          // network error (CORS, offline, etc.)
+          showNotFound(url, 'network');
+        }
+      }
+
+      function showNotFound(url, status) {
+        const msg = status === 'network'
+          ? `Cannot verify "${url}" (network error). Open in new tab to inspect.`
+          : `The page "${url}" returned HTTP ${status}. It may not exist or filename/case might be wrong. Open in new tab to inspect.`;
+        // Simple non-blocking UI: toast-like
+        const toast = document.createElement('div');
+        toast.className = 'fixed bottom-6 right-6 bg-yellow-100 text-yellow-900 px-4 py-3 rounded shadow-lg max-w-xs';
+        toast.innerHTML = `
+          <div class="font-bold mb-1">Page not available</div>
+          <div class="text-sm mb-2">${escapeHtml(msg)}</div>
+          <div class="flex gap-2 justify-end">
+            <button id="open-new-tab" class="px-3 py-1 bg-green-600 text-white rounded">Open</button>
+            <button id="dismiss-toast" class="px-3 py-1 bg-gray-200 rounded">Dismiss</button>
+          </div>
+        `;
+        document.body.appendChild(toast);
+        document.getElementById('open-new-tab').addEventListener('click', () => {
+          window.open(url, '_blank');
+          toast.remove();
+        });
+        document.getElementById('dismiss-toast').addEventListener('click', () => toast.remove());
+        // auto remove after 10s
+        setTimeout(()=> toast.remove(), 10000);
+      }
+
+      function escapeHtml(unsafe) {
+        return unsafe.replace(/[&<"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','"':'&quot;',"'" :'&#039;'}[m]);});
+      }
+
+      // Attach delegated listener for clicks on links
+      document.addEventListener('click', function (ev) {
+        // find closest anchor
+        const a = ev.target.closest && ev.target.closest('a');
+        if (!a) return;
+        const href = a.getAttribute('href');
+        // If no href or external link, let it pass
+        if (!href || href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+
+        // Only intercept same-page relative links (no hash navigation)
+        // Allow anchor links on same page (#)
+        if (href.startsWith('#')) return;
+
+        // Prevent default and check first
+        ev.preventDefault();
+        // build absolute URL relative to current origin
+        const url = new URL(href, window.location.href).toString();
+        // Only check same-origin
+        if (url.startsWith(location.origin)) {
+          checkAndNavigate(url, a);
+        } else {
+          // external origin — open normally
+          window.location.href = url;
+        }
+      }, false);
+    })();
+  </script>
 </body>
 </html>
-
