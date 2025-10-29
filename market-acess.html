@@ -1,51 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Market Access | JOMPO</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Market Access | JOMPO FarmLink</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <nav class="navbar">
-    <a href="index.html">Home</a>
-    <a href="dashboard.html">Dashboard</a>
+    <a href="index.html">Dashboard</a>
     <a href="farm-records.html">Farm Records</a>
     <a href="market-access.html" class="active">Market Access</a>
     <a href="community.html">Community</a>
     <a href="support.html">Support</a>
   </nav>
 
-  <section class="content">
+  <main>
     <h1>Market Access</h1>
-    <p>Check the latest produce prices and connect directly with buyers and suppliers.</p>
+    <p>Explore available markets, post your produce, and connect with buyers.</p>
 
-    <div class="market-list">
-      <div class="market-item">
-        <h3>Maize</h3>
-        <p>Current Price: <strong>KES 4,200 / 90kg bag</strong></p>
-        <button>Contact Buyer</button>
-      </div>
+    <form id="marketForm">
+      <input type="text" id="productName" placeholder="Product Name" required />
+      <input type="number" id="price" placeholder="Price per kg (KES)" required />
+      <button type="submit">Add Product</button>
+    </form>
 
-      <div class="market-item">
-        <h3>Beans</h3>
-        <p>Current Price: <strong>KES 7,000 / 90kg bag</strong></p>
-        <button>Contact Buyer</button>
-      </div>
+    <ul id="marketList"></ul>
+  </main>
 
-      <div class="market-item">
-        <h3>Tomatoes</h3>
-        <p>Current Price: <strong>KES 2,500 / Crate</strong></p>
-        <button>Contact Buyer</button>
-      </div>
-    </div>
-
-    <div class="nav-buttons">
-      <button onclick="history.back()">⬅ Back</button>
-      <button onclick="history.forward()">Forward ➡</button>
-    </div>
-  </section>
-  <script src="navbar.js"></script>
-
+  <script src="app.js"></script>
 </body>
 </html>
