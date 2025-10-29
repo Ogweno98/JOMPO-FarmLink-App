@@ -4,14 +4,204 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Community | JOMPO FarmLink</title>
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  
 
+  <style>
+    /* ---------- GLOBAL STYLES ---------- */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
+
+    body {
+      background-color: #f3f8f4;
+      color: #333;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    ul {
+      list-style: none;
+    }
+
+    /* ---------- NAVBAR ---------- */
+    header {
+      background: #2e8b57;
+      color: #fff;
+      padding: 15px 0;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 90%;
+      margin: auto;
+    }
+
+    .logo {
+      font-size: 1.3rem;
+      font-weight: 600;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 25px;
+    }
+
+    .nav-links a {
+      color: white;
+      font-weight: 500;
+      transition: color 0.3s ease;
+    }
+
+    .nav-links a:hover,
+    .nav-links a.active {
+      color: #c4ffc4;
+      border-bottom: 2px solid #c4ffc4;
+      padding-bottom: 3px;
+    }
+
+    /* ---------- MAIN CONTENT ---------- */
+    main {
+      flex: 1;
+      width: 90%;
+      max-width: 800px;
+      margin: 50px auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      padding: 30px;
+      animation: fadeIn 0.6s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h1 {
+      color: #2e8b57;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    p {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #555;
+    }
+
+    /* ---------- FORM ---------- */
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-bottom: 35px;
+    }
+
+    input, textarea {
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 15px;
+      transition: 0.3s;
+    }
+
+    input:focus, textarea:focus {
+      border-color: #2e8b57;
+      outline: none;
+      box-shadow: 0 0 5px rgba(46, 139, 87, 0.3);
+    }
+
+    button {
+      background: #2e8b57;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #256b44;
+    }
+
+    /* ---------- POSTS LIST ---------- */
+    #communityPosts {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    #communityPosts li {
+      background: #f8f8f8;
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 5px solid #2e8b57;
+    }
+
+    #communityPosts li strong {
+      color: #2e8b57;
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    /* ---------- FOOTER ---------- */
+    footer {
+      text-align: center;
+      padding: 15px;
+      background: #2e8b57;
+      color: white;
+      margin-top: auto;
+      font-size: 0.9rem;
+    }
+
+    /* ---------- RESPONSIVE ---------- */
+    @media (max-width: 768px) {
+      .nav-links {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ✅ NAVBAR -->
+  <header>
+    <nav class="navbar">
+      <div class="logo">🌾 JOMPO FarmLink</div>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="market-access.html">Market Access</a></li>
+        <li><a href="weather.html">Weather</a></li>
+        <li><a href="training.html">Training</a></li>
+        <li><a href="community.html" class="active">Community</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- ✅ MAIN CONTENT -->
   <main>
-    <h1>Community Forum</h1>
-    <p>Connect with other farmers, share experiences, and discuss ideas.</p>
+    <h1>👩🏾‍🌾 Community Forum</h1>
+    <p>Connect with other farmers, share experiences, and discuss ideas to grow together.</p>
 
     <form id="communityForm">
       <input type="text" id="userName" placeholder="Your Name" required />
@@ -22,6 +212,12 @@
     <ul id="communityPosts"></ul>
   </main>
 
+  <!-- ✅ FOOTER -->
+  <footer>
+    <p>&copy; 2025 JOMPO Digital Solutions | All Rights Reserved.</p>
+  </footer>
+
+  <!-- ✅ JAVASCRIPT (Linked to Firebase-enabled app.js) -->
   <script src="app.js"></script>
 </body>
 </html>
