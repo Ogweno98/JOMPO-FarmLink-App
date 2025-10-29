@@ -218,3 +218,63 @@ if (askWeatherDashboardBtn) {
   });
 }
 
+// FARM RECORDS
+const farmForm = document.getElementById("farmRecordForm");
+const recordsList = document.getElementById("recordsList");
+if (farmForm && recordsList) {
+  farmForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const crop = document.getElementById("cropName").value;
+    const qty = document.getElementById("harvestQty").value;
+
+    const li = document.createElement("li");
+    li.textContent = `${crop} — ${qty} kg`;
+    recordsList.appendChild(li);
+    farmForm.reset();
+  });
+}
+
+// MARKET ACCESS
+const marketForm = document.getElementById("marketForm");
+const marketList = document.getElementById("marketList");
+if (marketForm && marketList) {
+  marketForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = document.getElementById("productName").value;
+    const price = document.getElementById("price").value;
+
+    const li = document.createElement("li");
+    li.textContent = `${name} — KES ${price}/kg`;
+    marketList.appendChild(li);
+    marketForm.reset();
+  });
+}
+
+// COMMUNITY POSTS
+const communityForm = document.getElementById("communityForm");
+const communityPosts = document.getElementById("communityPosts");
+if (communityForm && communityPosts) {
+  communityForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const user = document.getElementById("userName").value;
+    const message = document.getElementById("message").value;
+
+    const li = document.createElement("li");
+    li.innerHTML = `<strong>${user}:</strong> ${message}`;
+    communityPosts.appendChild(li);
+    communityForm.reset();
+  });
+}
+
+// SUPPORT
+const supportForm = document.getElementById("supportForm");
+const supportResponse = document.getElementById("supportResponse");
+if (supportForm && supportResponse) {
+  supportForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    supportResponse.textContent =
+      "Thank you! Your message has been sent. We'll respond shortly.";
+    supportForm.reset();
+  });
+}
+
