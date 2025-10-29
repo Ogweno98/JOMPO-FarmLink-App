@@ -137,7 +137,6 @@ if (listingsContainer) {
     if (!user) return window.location.href = 'login.html';
     listingsContainer.innerHTML = '';
 
-    // user's products
     const prodSnap = await db.collection('listings').where('farmerID','==', user.uid).get();
     prodSnap.forEach(doc => {
       const d = doc.data();
@@ -152,7 +151,6 @@ if (listingsContainer) {
       `;
     });
 
-    // user's services
     const svcSnap = await db.collection('services').where('farmerID','==', user.uid).get();
     svcSnap.forEach(doc => {
       const d = doc.data();
@@ -164,123 +162,6 @@ if (listingsContainer) {
           <p>Location: ${d.location}</p>
         </div>
       `;
-    });
-  });
-}
-
-// ================== MARKETPLACE ==================
-const marketplaceContainer = document.getElementById('marketplaceContainer');
-if (marketplaceContainer) {
-  const noResults = document.getElementById('noResults');
-
-  // helper to render docs array
-  function renderListings(docs) {
-    marketplaceContainer.innerHTML = '';
-    if (!docs || docs.length === 0) {
-      if (noResults) noResults.classList.remove('hidden');
-      return;
-    }
-    if (noResults) noResults.classList.add('hidden');
-    docs.forEach(doc => {
-      const d = doc.data();
-      marketplaceContainer.innerHTML += `
-        <div class="bg-white p-4 rounded shadow hover:shadow-lg transition">
-          <h3 class="font-bold text-green-800">${d.name}</h3>
-          <p>Category: ${d.category}</p>
-          ${d.quantity ? `<p>Quantity: ${d.quantity}</p>` : ''}
-          <p>Price: KSh ${d.price}</p>
-          <p>Location: ${d.location}</p>
-        </div>
-      `;
-    });
-  }
-
-  async function fetchAndRenderAll() {
-    const snapshot = await db.collection('listings').get();
-    renderListings(snapshot.docs);
-    // populate categories select
-    const catSel = document.getElementById('filterCategory');
-    if (catSel) {
-      const cats = new Set();
-      snapshot.docs.forEach(d => { if (d.data().category) cats.add(d.data().category); });
-      cats.forEach(c => { if (![...catSel.options].some(o=>o.value===c)) { const o=document.createElement('option'); o.value=c; o.text=c; catSel.appendChild(o);} });
-    }
-  }
-
-  fetchAndRenderAll();
-
-  // filters logic
-  const searchInput = document.getElementById('searchInput');
-  const filterLocation = document.getElementById('filterLocation');
-  const filterCategory = document.getElementById('filterCategory');
-
-  [searchInput, filterLocation, filterCategory].forEach(el => {
-    if (!el) return;
-    el.addEventListener('input', async () => {
-      const snapshot = await db.collection('listings').get();
-      let docs = snapshot.docs;
-      if (searchInput && searchInput.value) docs = docs.filter(d => d.data().name?.toLowerCase().includes(searchInput.value.toLowerCase()));
-      if (filterLocation && filterLocation.value) docs = docs.filter(d => d.data().location?.toLowerCase().includes(filterLocation.value.toLowerCase()));
-      if (filterCategory && filterCategory.value) docs = docs.filter(d => d.data().category === filterCategory.value);
-      renderListings(docs);
-    });
-  });
-}
-
-// ================== SERVICES PAGE ==================
-const servicesContainer = document.getElementById('servicesContainer');
-if (servicesContainer) {
-  const noServices = document.getElementById('noServices');
-
-  function renderServices(docs) {
-    servicesContainer.innerHTML = '';
-    if (!docs || docs.length === 0) {
-      if (noServices) noServices.classList.remove('hidden');
-      return;
-    }
-    if (noServices) noServices.classList.add('hidden');
-    docs.forEach(doc => {
-      const d = doc.data();
-      servicesContainer.innerHTML += `
-        <div class="bg-white p-4 rounded shadow hover:shadow-lg transition">
-          <h3 class="font-bold text-green-800">${d.name}</h3>
-          <p>Category: ${d.category}</p>
-          <p>Price: KSh ${d.price}</p>
-          <p>Location: ${d.location}</p>
-          <p class="text-sm mt-2">${d.description || ''}</p>
-          <button class="mt-4 px-4 py-2 bg-green-700 text-white rounded hover:bg-green-800">Book Now</button>
-        </div>
-      `;
-    });
-  }
-
-  async function fetchServices() {
-    const snapshot = await db.collection('services').get();
-    renderServices(snapshot.docs);
-    // populate service categories
-    const catSel = document.getElementById('filterServiceCategory');
-    if (catSel) {
-      const cats = new Set();
-      snapshot.docs.forEach(d => { if (d.data().category) cats.add(d.data().category); });
-      cats.forEach(c => { if (![...catSel.options].some(o=>o.value===c)) { const o=document.createElement('option'); o.value=c; o.text=c; catSel.appendChild(o);} });
-    }
-  }
-
-  fetchServices();
-
-  const searchService = document.getElementById('searchService');
-  const filterServiceLocation = document.getElementById('filterServiceLocation');
-  const filterServiceCategory = document.getElementById('filterServiceCategory');
-
-  [searchService, filterServiceLocation, filterServiceCategory].forEach(el => {
-    if (!el) return;
-    el.addEventListener('input', async () => {
-      const snapshot = await db.collection('services').get();
-      let docs = snapshot.docs;
-      if (searchService && searchService.value) docs = docs.filter(d => d.data().name?.toLowerCase().includes(searchService.value.toLowerCase()));
-      if (filterServiceLocation && filterServiceLocation.value) docs = docs.filter(d => d.data().location?.toLowerCase().includes(filterServiceLocation.value.toLowerCase()));
-      if (filterServiceCategory && filterServiceCategory.value) docs = docs.filter(d => d.data().category === filterServiceCategory.value);
-      renderServices(docs);
     });
   });
 }
@@ -307,6 +188,32 @@ if (askAIDashboardBtn) {
     } catch (err) {
       console.error(err);
       responseText.textContent = 'Error connecting to AI service.';
+    }
+  });
+}
+
+// ================== WEATHER AI INTEGRATION ==================
+const askWeatherDashboardBtn = document.getElementById('askWeatherDashboard');
+if (askWeatherDashboardBtn) {
+  askWeatherDashboardBtn.addEventListener('click', async () => {
+    const location = document.getElementById('weatherQueryDashboard').value.trim();
+    const weatherBox = document.getElementById('weatherDashboardResponse');
+    const weatherText = document.getElementById('weatherDashboardText');
+    if (!location) return alert('Please enter a location.');
+    weatherText.textContent = 'Fetching weather data...';
+    weatherBox.classList.remove('hidden');
+
+    try {
+      const res = await fetch('https://us-central1-jompo-farmlink-web.cloudfunctions.net/weatherAI', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ location })
+      });
+      const data = await res.json();
+      weatherText.textContent = data.reply || 'Weather data not found.';
+    } catch (err) {
+      console.error(err);
+      weatherText.textContent = 'Error connecting to Weather AI service.';
     }
   });
 }
