@@ -1,0 +1,132 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Market Access | JOMPO FarmLink</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="bg-green-50 text-gray-800 font-sans">
+
+  <!-- ✅ Navbar -->
+  <nav class="bg-green-800 text-white p-4 flex justify-between items-center">
+    <a href="index.html" class="text-2xl font-bold">JOMPO FarmLink</a>
+    <div class="space-x-4">
+      <a href="index.html" class="hover:underline">Dashboard</a>
+      <a href="farm-records.html" class="hover:underline">Farm Records</a>
+      <a href="market-access.html" class="underline font-semibold">Market Access</a>
+      <a href="marketplace.html" class="hover:underline">Marketplace</a>
+      <a href="community.html" class="hover:underline">Community</a>
+      <a href="support.html" class="hover:underline">Support</a>
+    </div>
+  </nav>
+
+  <!-- ✅ Page Content -->
+  <section class="px-6 md:px-20 py-10">
+    <h1 class="text-3xl font-bold text-green-800 mb-4">Market Access</h1>
+    <p class="text-lg mb-6">
+      Post your farm produce, browse available items, and connect with buyers or sellers easily.
+    </p>
+
+    <!-- Form to Post New Product -->
+    <form id="marketForm" class="bg-white p-6 rounded-xl shadow-md mb-10 space-y-4 max-w-2xl">
+      <h2 class="text-xl font-semibold text-green-700">Post Your Produce</h2>
+      <input type="text" id="productName" placeholder="Product Name (e.g., Tomatoes)" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600" required />
+      <input type="number" id="price" placeholder="Price per kg (KES)" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600" required />
+      <input type="text" id="category" placeholder="Category (e.g., Vegetables, Fruits)" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600" required />
+      <input type="text" id="location" placeholder="Location (e.g., Kisumu)" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-600" required />
+      <button type="submit" class="bg-green-700 hover:bg-green-800 text-white font-semibold px-4 py-2 rounded">Add Product</button>
+    </form>
+
+    <!-- List of Posted Products -->
+    <div>
+      <h2 class="text-xl font-semibold text-green-700 mb-4">Available Products</h2>
+      <ul id="marketList" class="grid md:grid-cols-2 gap-4"></ul>
+    </div>
+  </section>
+
+  <!-- ✅ Chatbot + Navbar JS -->
+  <div id="chatbot"></div>
+  <script src="chatbot.js"></script>
+  <script src="navbar.js"></script>
+
+  <!-- ✅ Firebase Logic -->
+  <script>
+    // Use your Firebase config (same as app.js)
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const marketForm = document.getElementById('marketForm');
+    const marketList = document.getElementById('marketList');
+
+    // Add new product to shared collection
+    marketForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const productName = document.getElementById('productName').value.trim();
+      const price = parseFloat(document.getElementById('price').value.trim());
+      const category = document.getElementById('category').value.trim();
+      const location = document.getElementById('location').value.trim();
+
+      if (!productName || !price || !category || !location) {
+        alert("Please fill in all fields!");
+        return;
+      }
+
+      await db.collection('marketItems').add({
+        productName,
+        price,
+        category,
+        location,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+
+      marketForm.reset();
+      loadProducts();
+    });
+
+    // Load items from shared collection
+    async function loadProducts() {
+      const snapshot = await db.collection('marketItems').orderBy('timestamp', 'desc').get();
+      marketList.innerHTML = '';
+
+      if (snapshot.empty) {
+        marketList.innerHTML = '<p class="text-gray-600">No products listed yet.</p>';
+        return;
+      }
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const li = document.createElement('li');
+        li.className = 'bg-white p-4 rounded-lg shadow hover:shadow-md transition';
+        li.innerHTML = `
+          <h3 class="text-lg font-semibold text-green-700">${data.productName}</h3>
+          <p><strong>Price:</strong> KES ${data.price}/kg</p>
+          <p><strong>Category:</strong> ${data.category}</p>
+          <p><strong>Location:</strong> ${data.location}</p>
+        `;
+        marketList.appendChild(li);
+      });
+    }
+
+    loadProducts();
+  </script>
+
+</body>
+</html>
+         
