@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>AI Assistant - JOMPO FarmLink</title>
+  <title>AI & Weather Assistant - JOMPO FarmLink</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -13,9 +13,18 @@
   </nav>
 
   <section class="p-6 max-w-3xl mx-auto">
-    <h2 class="text-3xl font-bold text-green-800 mb-6">AI Agricultural Assistant</h2>
-    <p class="mb-4 text-gray-700">Ask anything about crops, soil, water, or sustainable farming. The AI will analyze and guide you.</p>
+    <h2 class="text-3xl font-bold text-green-800 mb-4">AI & Weather Agricultural Assistant</h2>
+    <p class="mb-6 text-gray-700">
+      Get real-time weather for your area and ask AI about crops, soil, and sustainable farming.
+    </p>
 
+    <!-- WEATHER SECTION -->
+    <div id="weatherBox" class="bg-white shadow rounded p-4 mb-6 hidden">
+      <h3 class="font-bold text-green-700 mb-2">🌦️ Current Weather</h3>
+      <p id="weatherData" class="text-gray-800">Fetching weather details...</p>
+    </div>
+
+    <!-- AI CHAT SECTION -->
     <textarea id="userInput" rows="3" class="w-full p-3 border rounded focus:ring-2 focus:ring-green-700" placeholder="e.g., How can I prevent maize pests naturally?"></textarea>
     <button id="askAI" class="mt-3 bg-green-700 text-white px-5 py-2 rounded hover:bg-green-800">Ask AI</button>
 
@@ -26,6 +35,50 @@
   </section>
 
   <script>
+    // 🌦️ WEATHER SECTION
+    const weatherBox = document.getElementById('weatherBox');
+    const weatherData = document.getElementById('weatherData');
+
+    async function loadWeather() {
+      if (!navigator.geolocation) {
+        weatherData.textContent = 'Geolocation not supported.';
+        weatherBox.classList.remove('hidden');
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(async pos => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        const apiKey = '135d22bf14054c7c8e491349252910'; // 👉 Replace this with your OpenWeather API Key
+        const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+
+        try {
+          const res = await fetch(url);
+          const data = await res.json();
+          const desc = data.weather[0].description;
+          const temp = data.main.temp;
+          const hum = data.main.humidity;
+
+          weatherData.innerHTML = `
+            <strong>Location:</strong> ${data.name}<br>
+            <strong>Temperature:</strong> ${temp}°C<br>
+            <strong>Humidity:</strong> ${hum}%<br>
+            <strong>Condition:</strong> ${desc}
+          `;
+          weatherBox.classList.remove('hidden');
+        } catch {
+          weatherData.textContent = 'Failed to fetch weather data.';
+          weatherBox.classList.remove('hidden');
+        }
+      }, () => {
+        weatherData.textContent = 'Unable to access location.';
+        weatherBox.classList.remove('hidden');
+      });
+    }
+
+    loadWeather();
+
+    // 💬 AI ASSISTANT SECTION
     document.getElementById('askAI').addEventListener('click', async () => {
       const query = document.getElementById('userInput').value.trim();
       if (!query) return alert('Please type a question.');
@@ -43,3 +96,4 @@
   </script>
 </body>
 </html>
+
