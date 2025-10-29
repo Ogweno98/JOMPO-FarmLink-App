@@ -12,16 +12,19 @@ if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// ---------------------- Navbar Links (auth-aware) ----------------------
+// ================== NAVBAR (Dynamic Auth Links) ==================
 auth.onAuthStateChanged(user => {
   const authLinks = document.getElementById("authLinks");
   if (!authLinks) return;
+
   if (user) {
     authLinks.innerHTML = `
       <span class="mr-4">Hi, ${user.email}</span>
       <button id="logoutBtn" class="px-3 py-1 bg-red-500 hover:bg-red-600 rounded text-white">Logout</button>
     `;
-    document.getElementById('logoutBtn').addEventListener('click', () => auth.signOut());
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      auth.signOut().then(() => (window.location.href = "index.html"));
+    });
   } else {
     authLinks.innerHTML = `
       <a href="login.html" class="px-4 py-2">Login</a>
@@ -44,7 +47,10 @@ if (registerForm) {
     try {
       const userCredential = await auth.createUserWithEmailAndPassword(email, password);
       const user = userCredential.user;
-      await db.collection('users').doc(user.uid).set({ name, email, location, role, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+      await db.collection('users').doc(user.uid).set({
+        name, email, location, role,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
       await user.sendEmailVerification();
       document.getElementById('message').classList.add('text-green-600');
       document.getElementById('message').textContent = 'Registration successful. Check your email to verify.';
@@ -69,18 +75,23 @@ if (loginForm) {
     try {
       const userCred = await auth.signInWithEmailAndPassword(email, password);
       if (!userCred.user.emailVerified) {
-        if (loginError) { loginError.textContent = 'Please verify your email before logging in.'; loginError.classList.remove('hidden'); }
+        if (loginError) {
+          loginError.textContent = 'Please verify your email before logging in.';
+          loginError.classList.remove('hidden');
+        }
         await auth.signOut();
         return;
       }
       window.location.href = 'dashboard.html';
     } catch (err) {
-      if (loginError) { loginError.textContent = err.message; loginError.classList.remove('hidden'); }
-      else alert(err.message);
+      if (loginError) {
+        loginError.textContent = err.message;
+        loginError.classList.remove('hidden');
+      } else alert(err.message);
     }
   });
 
-  // forgot password link
+  // Forgot password
   const forgotPasswordLink = document.getElementById('forgotPasswordLink');
   if (forgotPasswordLink) {
     forgotPasswordLink.addEventListener('click', async e => {
@@ -88,24 +99,30 @@ if (loginForm) {
       const email = document.getElementById('loginEmail').value.trim();
       const loginError = document.getElementById('loginError');
       if (!email) {
-        if (loginError) { loginError.textContent = 'Enter email then click Forgot Password'; loginError.classList.remove('hidden'); }
+        if (loginError) {
+          loginError.textContent = 'Enter email then click Forgot Password';
+          loginError.classList.remove('hidden');
+        }
         return;
       }
       try {
         await auth.sendPasswordResetEmail(email);
-        if (loginError) { loginError.textContent = 'Password reset email sent. Check your inbox.'; loginError.classList.remove('hidden'); loginError.classList.add('text-green-600'); }
+        if (loginError) {
+          loginError.textContent = 'Password reset email sent. Check your inbox.';
+          loginError.classList.remove('hidden');
+          loginError.classList.add('text-green-600');
+        }
       } catch (err) {
-        if (loginError) { loginError.textContent = err.message; loginError.classList.remove('hidden'); }
+        if (loginError) {
+          loginError.textContent = err.message;
+          loginError.classList.remove('hidden');
+        }
       }
     });
   }
 }
 
-// ================== LOGOUT BUTTON (dashboard.html separate) ==================
-const logoutBtn = document.getElementById('logoutBtn');
-if (logoutBtn) logoutBtn.addEventListener('click', () => auth.signOut().then(() => window.location.href = 'index.html'));
-
-// ================== ADD LISTING (dashboard) ==================
+// ================== DASHBOARD (Add Listing) ==================
 const addListingForm = document.getElementById('addListingForm');
 if (addListingForm) {
   addListingForm.addEventListener('submit', async e => {
@@ -118,7 +135,11 @@ if (addListingForm) {
     const user = auth.currentUser;
     if (!user) return alert('Not logged in');
 
-    const listingData = { name, category, quantity, price, location, farmerID: user.uid, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+    const listingData = {
+      name, category, quantity, price, location,
+      farmerID: user.uid,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
     try {
       if (category === 'service') await db.collection('services').add(listingData);
       else await db.collection('listings').add(listingData);
@@ -130,14 +151,14 @@ if (addListingForm) {
   });
 }
 
-// ================== DASHBOARD: show user's listings & services ==================
+// ================== DASHBOARD LISTINGS ==================
 const listingsContainer = document.getElementById('listingsContainer');
 if (listingsContainer) {
   auth.onAuthStateChanged(async user => {
-    if (!user) return window.location.href = 'login.html';
+    if (!user) return (window.location.href = 'login.html');
     listingsContainer.innerHTML = '';
 
-    const prodSnap = await db.collection('listings').where('farmerID','==', user.uid).get();
+    const prodSnap = await db.collection('listings').where('farmerID', '==', user.uid).get();
     prodSnap.forEach(doc => {
       const d = doc.data();
       listingsContainer.innerHTML += `
@@ -151,7 +172,7 @@ if (listingsContainer) {
       `;
     });
 
-    const svcSnap = await db.collection('services').where('farmerID','==', user.uid).get();
+    const svcSnap = await db.collection('services').where('farmerID', '==', user.uid).get();
     svcSnap.forEach(doc => {
       const d = doc.data();
       listingsContainer.innerHTML += `
@@ -166,59 +187,7 @@ if (listingsContainer) {
   });
 }
 
-// ================== AI DASHBOARD INTEGRATION ==================
-const askAIDashboardBtn = document.getElementById('askAIDashboard');
-if (askAIDashboardBtn) {
-  askAIDashboardBtn.addEventListener('click', async () => {
-    const query = document.getElementById('aiQueryDashboard').value.trim();
-    const responseBox = document.getElementById('aiDashboardResponse');
-    const responseText = document.getElementById('aiDashboardText');
-    if (!query) return alert('Please type a question for the AI.');
-    responseText.textContent = 'Analyzing your question...';
-    responseBox.classList.remove('hidden');
-
-    try {
-      const res = await fetch('https://us-central1-jompo-farmlink-web.cloudfunctions.net/askAI', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query })
-      });
-      const data = await res.json();
-      responseText.textContent = data.reply || 'AI could not process this query.';
-    } catch (err) {
-      console.error(err);
-      responseText.textContent = 'Error connecting to AI service.';
-    }
-  });
-}
-
-// ================== WEATHER AI INTEGRATION ==================
-const askWeatherDashboardBtn = document.getElementById('askWeatherDashboard');
-if (askWeatherDashboardBtn) {
-  askWeatherDashboardBtn.addEventListener('click', async () => {
-    const location = document.getElementById('weatherQueryDashboard').value.trim();
-    const weatherBox = document.getElementById('weatherDashboardResponse');
-    const weatherText = document.getElementById('weatherDashboardText');
-    if (!location) return alert('Please enter a location.');
-    weatherText.textContent = 'Fetching weather data...';
-    weatherBox.classList.remove('hidden');
-
-    try {
-      const res = await fetch('https://us-central1-jompo-farmlink-web.cloudfunctions.net/weatherAI', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ location })
-      });
-      const data = await res.json();
-      weatherText.textContent = data.reply || 'Weather data not found.';
-    } catch (err) {
-      console.error(err);
-      weatherText.textContent = 'Error connecting to Weather AI service.';
-    }
-  });
-}
-
-// FARM RECORDS
+// ================== FARM RECORDS ==================
 const farmForm = document.getElementById("farmRecordForm");
 const recordsList = document.getElementById("recordsList");
 if (farmForm && recordsList) {
@@ -234,7 +203,7 @@ if (farmForm && recordsList) {
   });
 }
 
-// MARKET ACCESS
+// ================== MARKET ACCESS ==================
 const marketForm = document.getElementById("marketForm");
 const marketList = document.getElementById("marketList");
 if (marketForm && marketList) {
@@ -250,7 +219,7 @@ if (marketForm && marketList) {
   });
 }
 
-// COMMUNITY POSTS
+// ================== COMMUNITY ==================
 const communityForm = document.getElementById("communityForm");
 const communityPosts = document.getElementById("communityPosts");
 if (communityForm && communityPosts) {
@@ -266,14 +235,14 @@ if (communityForm && communityPosts) {
   });
 }
 
-// SUPPORT
+// ================== SUPPORT ==================
 const supportForm = document.getElementById("supportForm");
 const supportResponse = document.getElementById("supportResponse");
 if (supportForm && supportResponse) {
   supportForm.addEventListener("submit", (e) => {
     e.preventDefault();
     supportResponse.textContent =
-      "Thank you! Your message has been sent. We'll respond shortly.";
+      "✅ Thank you! Your message has been sent. We'll respond shortly.";
     supportForm.reset();
   });
 }
