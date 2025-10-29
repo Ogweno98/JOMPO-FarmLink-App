@@ -1,61 +1,87 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>JOMPO FarmLink</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard - JOMPO FarmLink</title>
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Firebase (compat) -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
   <link rel="stylesheet" href="style.css" />
 </head>
-<body class="bg-green-50 font-sans">
-  
 
-
-  <nav class="bg-green-800 text-white p-4 flex justify-between items-center">
+<body class="bg-green-50 min-h-screen flex flex-col">
+  <!-- Navbar -->
+  <nav class="bg-green-800 text-white p-4 flex justify-between items-center shadow">
     <a href="index.html" class="text-2xl font-bold">JOMPO FarmLink</a>
-    <div id="authLinks">
-      <a href="login.html" class="px-4 py-2 hover:bg-green-700 rounded">Login</a>
-      <a href="register.html" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded ml-2">Register</a>
+    <div class="space-x-4">
+      <a href="profile.html" class="hover:underline">Profile</a>
+      <a href="logout.html" class="hover:underline">Logout</a>
     </div>
   </nav>
 
-  <section class="text-center py-20 bg-green-100">
-    <h1 class="text-4xl md:text-6xl font-bold text-green-800 mb-4">Connecting Farmers to Buyers & Consumers</h1>
-    <p class="text-green-700 mb-8 text-lg md:text-xl">Sell products, access services, and grow your farm with JOMPO FarmLink</p>
-    <a href="register.html" class="px-6 py-3 bg-green-700 text-white rounded-lg hover:bg-green-800 mr-4">Join as Farmer</a>
-    <a href="marketplace.html" class="px-6 py-3 bg-yellow-500 text-green-900 rounded-lg hover:bg-yellow-400">Browse Marketplace</a>
-  </section>
+  <!-- Dashboard Content -->
+  <main class="flex-1 p-6 max-w-6xl mx-auto">
+    <h2 class="text-3xl font-bold text-green-800 mb-6">Welcome to Your Dashboard</h2>
 
-  <section class="py-16 px-6 md:px-20 grid md:grid-cols-3 gap-8 text-center">
-    <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
-      <h2 class="text-2xl font-bold text-green-800 mb-2">Sell Your Products</h2>
-      <p>Post your farm produce and reach buyers all over Kenya.</p>
-    </div>
-    <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
-      <h2 class="text-2xl font-bold text-green-800 mb-2">Access Services</h2>
-      <p>Rent tractors, solar panels, book training and more.</p>
-    </div>
-    <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
-      <h2 class="text-2xl font-bold text-green-800 mb-2">Grow Your Market</h2>
-      <p>Connect directly with buyers and consumers and earn more.</p>
-    </div>
-  </section>
+    <p class="text-gray-700 mb-8">
+      Access tools, AI assistants, weather forecasts, and smart farming insights to enhance your agricultural productivity.
+    </p>
 
-  <footer class="bg-green-800 text-white p-6 text-center">
-    <p>© 2025 JOMPO FarmLink | All Rights Reserved</p>
-    <p>Contact: info@jompo.org</p>
+    <!-- Dashboard Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      
+      <!-- Smart Farming AI -->
+      <a href="ai.html" class="block bg-white rounded-xl shadow hover:shadow-lg p-6 border border-green-100 hover:border-green-400 transition">
+        <h3 class="text-xl font-bold text-green-700 mb-2">🤖 Smart Farming AI Assistant</h3>
+        <p class="text-gray-700">Ask AI about crops, soil, pest control, and sustainable farming solutions.</p>
+      </a>
+
+      <!-- Weather AI Assistant -->
+      <a href="weather.html" class="block bg-white rounded-xl shadow hover:shadow-lg p-6 border border-green-100 hover:border-green-400 transition">
+        <h3 class="text-xl font-bold text-green-700 mb-2">🌦️ Weather AI Assistant</h3>
+        <p class="text-gray-700">Get real-time weather updates and farming advice based on your local conditions.</p>
+      </a>
+
+      <!-- Farm Records -->
+      <a href="farm-records.html" class="block bg-white rounded-xl shadow hover:shadow-lg p-6 border border-green-100 hover:border-green-400 transition">
+        <h3 class="text-xl font-bold text-green-700 mb-2">📒 Farm Records</h3>
+        <p class="text-gray-700">Manage your daily farm activities, crop data, and productivity logs.</p>
+      </a>
+
+      <!-- Market Access -->
+      <a href="market-access.html" class="block bg-white rounded-xl shadow hover:shadow-lg p-6 border border-green-100 hover:border-green-400 transition">
+        <h3 class="text-xl font-bold text-green-700 mb-2">💰 Market Access</h3>
+        <p class="text-gray-700">Connect directly with buyers and check market prices for your farm produce.</p>
+      </a>
+
+      <!-- Marketplace -->
+      <a href="marketplace.html" class="block bg-white rounded-xl shadow hover:shadow-lg p-6 border border-green-100 hover:border-green-400 transition">
+        <h3 class="text-xl font-bold text-green-700 mb-2">🛒 Marketplace</h3>
+        <p class="text-gray-700">Explore products, seeds, tools, and farming essentials available near you.</p>
+      </a>
+
+      <!-- Community Page -->
+      <a href="community.html" class="block bg-white rounded-xl shadow hover:shadow-lg p-6 border border-green-100 hover:border-green-400 transition">
+        <h3 class="text-xl font-bold text-green-700 mb-2">🌍 Community</h3>
+        <p class="text-gray-700">Engage with other farmers, share updates, and learn from community insights.</p>
+      </a>
+
+      <!-- Support / Help -->
+      <a href="support.html" class="block bg-white rounded-xl shadow hover:shadow-lg p-6 border border-green-100 hover:border-green-400 transition">
+        <h3 class="text-xl font-bold text-green-700 mb-2">🛠️ Support & Help</h3>
+        <p class="text-gray-700">Need help? Contact our JOMPO team for assistance or training support.</p>
+      </a>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-green-800 text-white text-center p-4 mt-6">
+    <p>© 2025 JOMPO Digital Solutions | Empowering Green Innovation</p>
   </footer>
 
-  <script src="app.js"></script>
   <!-- 🌿 JOMPO Floating Chatbot -->
-<div id="chatbot"></div>
-<script src="chatbot.js"></script>
-
+  <div id="chatbot"></div>
+  <script src="chatbot.js"></script>
+  <script src="navbar.js"></script>
 </body>
 </html>
