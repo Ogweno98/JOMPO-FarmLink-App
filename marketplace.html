@@ -26,11 +26,13 @@
 
     <!-- Search and Filters -->
     <div class="mb-6 flex flex-col md:flex-row gap-4">
-      <input type="text" id="searchInput" placeholder="Search by name..." 
+      <input type="text" id="searchInput" placeholder="Search by name or keyword..."
         class="px-4 py-2 border rounded w-full md:w-1/3 focus:outline-none focus:ring-2 focus:ring-green-600">
-      <input type="text" id="filterLocation" placeholder="Filter by location" 
+
+      <input type="text" id="filterLocation" placeholder="Filter by location"
         class="px-4 py-2 border rounded w-full md:w-1/3 focus:outline-none focus:ring-2 focus:ring-green-600">
-      <select id="filterCategory" 
+
+      <select id="filterCategory"
         class="px-4 py-2 border rounded w-full md:w-1/3 focus:outline-none focus:ring-2 focus:ring-green-600">
         <option value="">All Categories</option>
       </select>
@@ -64,7 +66,7 @@
     const noResults = document.getElementById('noResults');
 
     // Default categories
-    const defaultCategories = ["Cereals", "Vegetables", "Fruits", "Livestock", "Poultry", "Fish", "Seeds", "Fertilizers"];
+    const defaultCategories = ["Cereals", "Vegetables", "Fruits", "Livestock", "Poultry", "Fish", "Seeds", "Fertilizers", "Machinery", "Agrochemicals"];
 
     // Load categories dynamically into dropdown
     function loadCategories() {
@@ -77,58 +79,56 @@
       });
     }
 
-    // Load marketplace items
-    async function loadMarketplace() {
+    // Fetch & Display Marketplace Items
+    async function loadMarketplace(category = "", search = "", location = "") {
       marketplaceContainer.innerHTML = "";
-      const querySnapshot = await db.collection("marketplace").orderBy("timestamp", "desc").get();
-      if (querySnapshot.empty) {
-        noResults.classList.remove("hidden");
-        return;
-      }
+      let query = db.collection("marketplace").orderBy("timestamp", "desc");
 
-      noResults.classList.add("hidden");
-      querySnapshot.forEach(doc => {
+      const snapshot = await query.get();
+      let found = false;
+
+      snapshot.forEach(doc => {
         const data = doc.data();
-        const card = document.createElement("div");
-        card.className = "bg-white p-4 rounded-lg shadow hover:shadow-lg transition";
-        card.innerHTML = `
-          <h3 class="text-lg font-bold text-green-800 mb-2">${data.name || "Unnamed Item"}</h3>
-          <p class="text-gray-700">Category: ${data.category || "N/A"}</p>
-          <p class="text-gray-700">Location: ${data.location || "Unknown"}</p>
-          <p class="text-gray-700 font-semibold mt-2">${data.price ? data.price + " KES/kg" : ""}</p>
-        `;
-        marketplaceContainer.appendChild(card);
+        const name = (data.name || "").toLowerCase();
+        const cat = (data.category || "").toLowerCase();
+        const loc = (data.location || "").toLowerCase();
+
+        const match =
+          (!category || cat.includes(category)) &&
+          (!search || name.includes(search) || cat.includes(search)) &&
+          (!location || loc.includes(location));
+
+        if (match) {
+          found = true;
+          const card = document.createElement("div");
+          card.className = "bg-white p-4 rounded-lg shadow hover:shadow-lg transition";
+          card.innerHTML = `
+            <h3 class="text-lg font-bold text-green-800 mb-2">${data.name || "Unnamed Item"}</h3>
+            <p class="text-gray-700">Category: ${data.category || "N/A"}</p>
+            <p class="text-gray-700">Location: ${data.location || "Unknown"}</p>
+            <p class="text-gray-700 font-semibold mt-2">${data.price ? data.price + " KES/kg" : ""}</p>
+          `;
+          marketplaceContainer.appendChild(card);
+        }
       });
+
+      noResults.classList.toggle("hidden", found);
     }
 
-    // Filter function
-    function filterItems() {
+    // Real-time filter trigger
+    function applyFilters() {
+      const categoryValue = filterCategory.value.toLowerCase();
       const searchValue = searchInput.value.toLowerCase();
       const locationValue = filterLocation.value.toLowerCase();
-      const categoryValue = filterCategory.value.toLowerCase();
-
-      const cards = marketplaceContainer.querySelectorAll("div");
-      let anyVisible = false;
-
-      cards.forEach(card => {
-        const text = card.textContent.toLowerCase();
-        const match = 
-          (!searchValue || text.includes(searchValue)) &&
-          (!locationValue || text.includes(locationValue)) &&
-          (!categoryValue || text.includes(categoryValue));
-        card.style.display = match ? "block" : "none";
-        if (match) anyVisible = true;
-      });
-
-      noResults.classList.toggle("hidden", anyVisible);
+      loadMarketplace(categoryValue, searchValue, locationValue);
     }
 
-    // Event listeners
-    searchInput.addEventListener("input", filterItems);
-    filterLocation.addEventListener("input", filterItems);
-    filterCategory.addEventListener("change", filterItems);
+    // Event Listeners
+    searchInput.addEventListener("input", applyFilters);
+    filterLocation.addEventListener("input", applyFilters);
+    filterCategory.addEventListener("change", applyFilters);
 
-    // Load all data when page is ready
+    // Initialize on page load
     window.addEventListener("DOMContentLoaded", () => {
       loadCategories();
       loadMarketplace();
@@ -136,4 +136,5 @@
   </script>
 </body>
 </html>
+
       
